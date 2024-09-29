@@ -1,0 +1,46 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Compiled output files
+*.out
+
+# Directories for generated binaries and builds
+/vendor/
+bin/
+build/
+
+# Ignore IDE and editor specific settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Log files and debugging traces
+*.log
+*.trace
+
+# OS generated files (macOS, Windows)
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.old
+*.swp
+
+# Docker and container-specific files
+docker-compose.override.yml
+.env
+
+# Temporary Go environment files
+go.work
+go.work.sum
+
+# Golang coverage files
+*.cover
