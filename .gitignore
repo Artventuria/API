@@ -44,3 +44,40 @@ go.work.sum
 
 # Golang coverage files
 *.cover
+
+# Test binary, built with `go test -c`
+*.test
+
+# Configuration files
+.config.*.*
+*.config.yml
+.config.yml
+.config.dev.yml
+*.config.yaml
+.config.yaml
+.config.dev.yaml
+*.config.json
+.config.json
+.config.dev.json
+
+# Log files
+/logs
+*.log
+*.logs
+
+# MegaLinter
+megalinter-reports
+megalinter-reports/*
+/build/
+
+# Terraform state files
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Fichier de variables sensibles
+*.tfvars
+
+# Fichiers de logs
+crash.log
+*.log
