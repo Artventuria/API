@@ -1,0 +1,19 @@
+run:
+  skip-dirs:
+    - .configs
+    - deploy
+    - tmp
+    - vendor
+  modules-download-mode: vendor
+output:
+  print-issued-lines: true
+linters:
+  enable-all: true
+  disable:
+    - lll
+    - prealloc
+    - gochecknoglobals
+    - gochecknoinits
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
