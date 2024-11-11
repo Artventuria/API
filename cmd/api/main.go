@@ -1,5 +1,14 @@
+// Package main
 package main
 
+import (
+	"fmt"
+	"time"
+)
+
 func main() {
-	// TODO: implement
+	for {
+		fmt.Println("Hello, World!")
+		time.Sleep(30 * time.Second)
+	}
 }
