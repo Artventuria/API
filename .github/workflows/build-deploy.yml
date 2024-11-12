@@ -43,7 +43,7 @@ jobs:
           ssh-agent > ~/.ssh-agent-info
           . ~/.ssh-agent-info
           echo "echo $SSH_PASSPHRASE" > ~/.ssh_askpass && chmod +x ~/.ssh_askpass
-          echo "$SSH_PRIVATE_KEY" | base64 -d | DISPLAY=None SSH_ASKPASS=~/.ssh_askpass ssh-add - >/dev/null
+          echo "$SSH_PRIVATE_KEY" | DISPLAY=None SSH_ASKPASS=~/.ssh_askpass ssh-add - >/dev/null
           echo "SSH setup completed."
 
       - name: Test SSH Connection
