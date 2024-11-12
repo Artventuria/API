@@ -52,18 +52,21 @@ jobs:
           ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.SERVER_HOST }} "echo 'SSH connection successful'"
 
       - name: Deploy to Server
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
           echo "Logging into Docker on the server and pulling the image..."
           ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.SERVER_HOST }} << 'EOF'
-            docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
-            docker pull ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }}
-          
+            echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+            docker pull $DOCKER_USERNAME/artventuria-api:${GITHUB_REF_NAME}
+
             echo "Stopping and removing any existing container named 'artventuria-api'..."
             docker stop artventuria-api || true
             docker rm artventuria-api || true
-          
+
             echo "Running the new container on port 8000..."
-            docker run -d --name artventuria-api -p 8000:7000 ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }}
+            docker run -d --name artventuria-api -p 8000:7000 $DOCKER_USERNAME/artventuria-api:${GITHUB_REF_NAME}
 
             echo "Checking if the container is running..."
             docker ps -a | grep artventuria-api
