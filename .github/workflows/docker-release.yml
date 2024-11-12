@@ -3,14 +3,13 @@ name: Docker Release CI/CD
 on:
   push:
     tags:
-      - 'v*'  # Triggers only during version tag pushes (ex: v1.0, v1.1)
+      - "v*" # Triggers only during version tag pushes (ex: v1.0, v1.1)
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Check out repository
         uses: actions/checkout@v4.2.2
 
