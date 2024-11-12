@@ -34,44 +34,39 @@ jobs:
           echo "Pushing Docker image to Docker Hub..."
           docker push ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }}
 
-      - name: Setup SSH Agent with Passphrase
-        env:
-          SSH_PASSPHRASE: ${{ secrets.SERVER_SSH_PASSPHRASE }}
-          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+      - name: Configure SSH
         run: |
-          echo "Starting SSH agent and adding private key with passphrase..."
-          eval "$(ssh-agent -s)"
-          echo "$SSH_PRIVATE_KEY" | base64 -d > /tmp/artventuria-key
-          chmod 600 /tmp/artventuria-key
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SERVER_SSH_KEY }}" | base64 -d > ~/.ssh/private_key
+          chmod 600 ~/.ssh/private_key
           
-          # Setup SSH_ASKPASS to automatically provide the passphrase
-          echo "echo $SSH_PASSPHRASE" > /tmp/ssh-askpass
-          chmod +x /tmp/ssh-askpass
-          DISPLAY=:0 SSH_ASKPASS=/tmp/ssh-askpass ssh-add /tmp/artventuria-key
-          echo "SSH setup completed."
+          # Create SSH config file
+          echo -e "Host ec2\n\tHostName ${{ secrets.SERVER_HOST }}\n\tUser ec2-user\n\tIdentityFile ~/.ssh/private_key\n\tStrictHostKeyChecking no" > ~/.ssh/config
 
       - name: Test SSH Connection
-        run: |
-          echo "Testing SSH connection..."
-          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.SERVER_HOST }} "echo 'SSH connection successful'"
+        run: ssh ec2 "echo 'SSH connection successful'"
 
       - name: Deploy to Server
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
-          echo "Logging into Docker on the server and pulling the image..."
-          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.SERVER_HOST }} << 'EOF'
-            echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-            docker pull $DOCKER_USERNAME/artventuria-api:${GITHUB_REF_NAME}
-
-            echo "Stopping and removing any existing container named 'artventuria-api'..."
+          ssh ec2 << EOF
+            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+            docker pull ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${GITHUB_REF_NAME}
+          
+            echo "Stopping and removing any existing container..."
             docker stop artventuria-api || true
             docker rm artventuria-api || true
-
-            echo "Running the new container on port 8000..."
-            docker run -d --name artventuria-api -p 8000:7000 $DOCKER_USERNAME/artventuria-api:${GITHUB_REF_NAME}
-
-            echo "Checking if the container is running..."
-            docker ps -a | grep artventuria-api
+          
+            echo "Running the new container..."
+            docker run -d \
+              --name artventuria-api \
+              -p 8000:7000 \
+              --restart unless-stopped \
+              ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${GITHUB_REF_NAME}
+          
+            echo "Checking container status..."
+            docker ps | grep artventuria-api
           EOF
