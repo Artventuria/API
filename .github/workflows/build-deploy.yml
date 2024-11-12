@@ -15,32 +15,56 @@ jobs:
 
       - name: Build Go binary with builder Dockerfile
         run: |
+          echo "Building Go binary with builder Dockerfile..."
           docker build -f .deploy/builder.Dockerfile -t artventuria-builder .
           docker run --rm -v $PWD/build:/usr/src/app/build artventuria-builder
 
       - name: Build Docker image
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }} -f .deploy/Dockerfile .
+        run: |
+          echo "Building Docker image for deployment..."
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }} -f .deploy/Dockerfile .
 
       - name: Log in to Docker Hub
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+        run: |
+          echo "Logging into Docker Hub..."
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Push Docker image to Docker Hub
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }}
+        run: |
+          echo "Pushing Docker image to Docker Hub..."
+          docker push ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }}
 
       - name: Setup SSH with passphrase
         env:
           SSH_PASSPHRASE: ${{ secrets.SERVER_SSH_PASSPHRASE }}
           SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
         run: |
+          echo "Setting up SSH agent with passphrase..."
           ssh-agent > ~/.ssh-agent-info
           . ~/.ssh-agent-info
           echo "echo $SSH_PASSPHRASE" > ~/.ssh_askpass && chmod +x ~/.ssh_askpass
           echo "$SSH_PRIVATE_KEY" | base64 -d | DISPLAY=None SSH_ASKPASS=~/.ssh_askpass ssh-add - >/dev/null
+          echo "SSH setup completed."
+
+      - name: Test SSH Connection
+        run: |
+          echo "Testing SSH connection..."
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.SERVER_HOST }} "echo 'SSH connection successful'"
 
       - name: Deploy to Server
         run: |
-          docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
-          docker pull ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }}
-          docker stop artventuria-api || true
-          docker rm artventuria-api || true
-          docker run -d --name artventuria-api -p 8000:7000 ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }}
+          echo "Logging into Docker on the server and pulling the image..."
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.SERVER_HOST }} << 'EOF'
+            docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
+            docker pull ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }}
+          
+            echo "Stopping and removing any existing container named 'artventuria-api'..."
+            docker stop artventuria-api || true
+            docker rm artventuria-api || true
+          
+            echo "Running the new container on port 8000..."
+            docker run -d --name artventuria-api -p 8000:7000 ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }}
+
+            echo "Checking if the container is running..."
+            docker ps -a | grep artventuria-api
+          EOF
