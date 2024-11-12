@@ -3,7 +3,7 @@ name: Docker Release CI/CD
 on:
   push:
     tags:
-      - "v*" # Triggers only during version tag pushes (ex: v1.0, v1.1)
+      - "v*"
 
 jobs:
   build-and-deploy:
@@ -34,23 +34,51 @@ jobs:
           echo "Pushing Docker image to Docker Hub..."
           docker push ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }}
 
+      - name: Debug SSH Key
+        run: |
+          # Check if the key is being decoded correctly (print first line only)
+          echo "${{ secrets.SERVER_SSH_KEY }}" | base64 -d | head -n 1
+          
+          # Check if the key starts with correct SSH key format
+          if echo "${{ secrets.SERVER_SSH_KEY }}" | base64 -d | grep -q "BEGIN"; then
+            echo "SSH key appears to be in the correct format"
+          else
+            echo "SSH key may not be in the correct format"
+          fi
+
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SERVER_SSH_KEY }}" | base64 -d > ~/.ssh/private_key
           chmod 600 ~/.ssh/private_key
           
-          # Create SSH config file
-          echo -e "Host ec2\n\tHostName ${{ secrets.SERVER_HOST }}\n\tUser ec2-user\n\tIdentityFile ~/.ssh/private_key\n\tStrictHostKeyChecking no" > ~/.ssh/config
+          # Print SSH key permissions
+          ls -la ~/.ssh/private_key
+          
+          # Create SSH config file with verbose logging
+          cat > ~/.ssh/config << EOF
+          Host ec2
+            HostName ${{ secrets.SERVER_HOST }}
+            User ec2-user
+            IdentityFile ~/.ssh/private_key
+            StrictHostKeyChecking no
+            LogLevel DEBUG3
+          EOF
+          
+          # Print SSH config (without sensitive data)
+          cat ~/.ssh/config
 
-      - name: Test SSH Connection
-        run: ssh ec2 "echo 'SSH connection successful'"
+      - name: Test SSH Connection with Verbose Output
+        run: |
+          echo "Testing SSH connection with verbose output..."
+          ssh -v ec2 "echo 'SSH connection successful'"
 
       - name: Deploy to Server
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
+        if: false  # Temporarily disabled until SSH is working
         run: |
           ssh ec2 << EOF
             echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
