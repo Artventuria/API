@@ -34,16 +34,20 @@ jobs:
           echo "Pushing Docker image to Docker Hub..."
           docker push ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }}
 
-      - name: Setup SSH Agent
+      - name: Setup SSH Agent with Passphrase
         env:
           SSH_PASSPHRASE: ${{ secrets.SERVER_SSH_PASSPHRASE }}
           SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
         run: |
-          echo "Starting SSH agent and adding private key..."
+          echo "Starting SSH agent and adding private key with passphrase..."
           eval "$(ssh-agent -s)"
           echo "$SSH_PRIVATE_KEY" | base64 -d > /tmp/artventuria-key
           chmod 600 /tmp/artventuria-key
-          ssh-add /tmp/artventuria-key
+          
+          # Setup SSH_ASKPASS to automatically provide the passphrase
+          echo "echo $SSH_PASSPHRASE" > /tmp/ssh-askpass
+          chmod +x /tmp/ssh-askpass
+          DISPLAY=:0 SSH_ASKPASS=/tmp/ssh-askpass ssh-add /tmp/artventuria-key
           echo "SSH setup completed."
 
       - name: Test SSH Connection
