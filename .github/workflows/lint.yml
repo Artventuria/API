@@ -5,21 +5,25 @@ on:
     branches: [main, develop]
 
 jobs:
-  mega-linter:
+  lint:
+    name: Lint Check
     runs-on: ubuntu-latest
+    continue-on-error: false
     steps:
       - name: Check out code
         uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
 
       - name: Run MegaLinter
+        id: lint
         uses: oxsecurity/megalinter@v8
-        with:
-          descriptor: "go"
-          env_vars: |
-            APPLY_FIXES=none
-            SHOW_ELAPSED_TIME=true
-            ENABLE_LINTERS=YAML_PRETTIER,YAML_YAMLLINT,GO_REVIVE,GO_GOLANGCI_LINT,MAKEFILE_CHECKMAKE,MARKDOWN_MARKDOWN_LINK_CHECK,MARKDOWN_MARKDOWN_TABLE_FORMATTER,MARKDOWN_MARKDOWNLINT,MARKDOWN_REMARK_LINT,SQL_SQL_LINT,SQL_SQLFLUFF,MONGODB_MONGOSH
-            JSON_REPORTER=true
-            FILEIO_REPORTER=false
-            EMAIL_REPORTER=false
-            FLAVOR_SUGGESTIONS=false
+        env:
+          APPLY_FIXES: none
+          SHOW_ELAPSED_TIME: true
+          ENABLE_LINTERS: YAML_PRETTIER,YAML_YAMLLINT,GO_REVIVE,GO_GOLANGCI_LINT,MAKEFILE_CHECKMAKE,MARKDOWN_MARKDOWN_LINK_CHECK,MARKDOWN_MARKDOWN_TABLE_FORMATTER,MARKDOWN_MARKDOWNLINT,MARKDOWN_REMARK_LINT,SQL_SQL_LINT,SQL_SQLFLUFF,MONGODB_MONGOSH
+          JSON_REPORTER: true
+          FILEIO_REPORTER: false
+          EMAIL_REPORTER: false
+          FLAVOR_SUGGESTIONS: false
+          DISABLE_ERRORS: false
