@@ -1,0 +1,49 @@
+## This is the docker compose file for the local environment
+version: '3.8'
+
+name: Artventuria-staging
+
+services:
+  postgres-test:
+    image: postgres:14
+    container_name: postgres-test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: artventuria
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - artventuria-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb-test:
+    image: mongo:5
+    container_name: mongodb-test
+    environment:
+      MONGO_INITDB_DATABASE: artventuria
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - artventuria-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/artventuria --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  artventuria-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mongo_data:
