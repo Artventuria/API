@@ -1,5 +1,6 @@
+---
 ## This is the docker compose file for the production environment
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -72,22 +73,22 @@ services:
       database.name: artventuria
       database.username: postgres
       database.password: ${DATABASE_PASSWORD}
-      
+
       # Kafka configuration
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      
+
       # MongoDB configuration
       MONGODB_HOST: mongodb
       MONGODB_PORT: 27017
       MONGODB_DATABASE: artventuria
-      
+
       # JWT configuration
       JWT_SECRET: ${JWT_SECRET}
-      
+
       # Other environment variables
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: prod
-      
+
       # Add any other environment variables your application needs
     ports:
       - "8001:8080"
