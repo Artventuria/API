@@ -27,3 +27,6 @@ JSON_REPORTER: true
 FILEIO_REPORTER: false
 EMAIL_REPORTER: false
 FLAVOR_SUGGESTIONS: false
+
+ignore:
+  - .github/workflows/build-deploy.yml
