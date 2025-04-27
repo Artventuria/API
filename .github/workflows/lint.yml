@@ -1,0 +1,15 @@
+name: Lint Pipeline
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  mega-linter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4.2.2
+
+      - name: Run MegaLinter
+        uses: oxsecurity/megalinter@v8
