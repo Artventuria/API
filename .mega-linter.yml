@@ -28,5 +28,6 @@ FILEIO_REPORTER: false
 EMAIL_REPORTER: false
 FLAVOR_SUGGESTIONS: false
 
+# Ignore the build-deploy.yml file
 ignore:
   - .github/workflows/build-deploy.yml
