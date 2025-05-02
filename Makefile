@@ -1,6 +1,6 @@
 BINARY_NAME=artventuriaapi
-DEV_CONFIG_PATH=src/main/resources/application-dev.properties
-PROD_CONFIG_PATH=src/main/resources/application.properties
+DEV_CONFIG_PATH=src/main/resources/application-dev.yml
+PROD_CONFIG_PATH=src/main/resources/application.yml
 
 RM=rm -f
 
