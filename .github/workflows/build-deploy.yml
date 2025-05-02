@@ -42,6 +42,11 @@ jobs:
           chmod 600 ~/.ssh/artventuria-key  # Set proper permissions for the SSH key
           echo -e "Host ec2\n  HostName ${{ secrets.SERVER_HOST }}\n  User ec2-user\n  IdentityFile ~/.ssh/artventuria-key\n  StrictHostKeyChecking no\n  ControlMaster auto\n  ControlPath ~/.ssh/cm_socket_%r@%h:%p\n  ControlPersist 10m" > ~/.ssh/config  # Configure SSH for ControlMaster to reuse connections
 
+      - name: Setup Firebase config
+        run: |
+          mkdir -p src/main/resources/config
+          echo "${{ secrets.FIREBASE_CONFIG_JSON }}" | base64 -d > src/main/resources/config/artventuria-v1-firebase-adminsdk-fbsvc-f1f7233991.json
+
       - name: Deploy to Server
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
@@ -50,6 +55,10 @@ jobs:
           DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           CERTBOT_EMAIL: ${{ secrets.CERTBOT_EMAIL }}
+          FIREBASE_CONFIG_PATH: ${{ secrets.FIREBASE_CONFIG_PATH }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          AWS_SES_REGION: ${{ secrets.AWS_SES_REGION }}
+          AWS_SES_FROM_EMAIL: ${{ secrets.AWS_SES_FROM_EMAIL }}
         run: |
           # Initiate ControlMaster with a simple SSH connection
           ssh ec2 "echo Connected"
