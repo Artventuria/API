@@ -85,6 +85,14 @@ services:
       # JWT configuration
       JWT_SECRET: ${JWT_SECRET}
 
+      # Firebase configuration
+      FIREBASE_CONFIG_PATH: ${FIREBASE_CONFIG_PATH}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+
+      # AWS SES configuration
+      AWS_SES_REGION: ${AWS_SES_REGION}
+      AWS_SES_FROM_EMAIL: ${AWS_SES_FROM_EMAIL}
+
       # Other environment variables
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: prod
