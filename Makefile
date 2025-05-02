@@ -1,6 +1,6 @@
 BINARY_NAME=artventuriaapi
-DEV_CONFIG_PATH=src/main/resources/application-dev.properties
-PROD_CONFIG_PATH=src/main/resources/application.properties
+DEV_CONFIG_PATH=src/main/resources/application-dev.yml
+PROD_CONFIG_PATH=src/main/resources/application.yml
 
 RM=rm -f
 
@@ -86,6 +86,10 @@ deps: ## Download dependencies
 .PHONY: lint
 lint: ## Run linters
 	$(MVN) checkstyle:check
+
+.PHONY: megalint
+megalint: ## Run MegaLinter with same config as CI
+	docker run -v "$(shell pwd)":/tmp/lint oxsecurity/megalinter:v8
 
 .PHONY: docs
 docs: ## Generate API documentation

@@ -179,7 +179,7 @@ git push origin v1.0.0
 
 ## 📁 Project Structure
 
-```
+```text
 .
 ├── .deploy/                # Deployment configuration
 ├── .github/                # GitHub workflows (CI/CD)
