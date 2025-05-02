@@ -87,6 +87,10 @@ deps: ## Download dependencies
 lint: ## Run linters
 	$(MVN) checkstyle:check
 
+.PHONY: megalint
+megalint: ## Run MegaLinter with same config as CI
+	docker run -v "$(shell pwd)":/tmp/lint oxsecurity/megalinter:v8
+
 .PHONY: docs
 docs: ## Generate API documentation
 	$(MVN) javadoc:javadoc
