@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property name="LOGS" value="./logs" />
+
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) %X{method} - %X{path} - from IP: %X{clientIp} - %cyan(%logger{36}) - %msg - Response: %X{status} in %X{duration}ms%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="RollingFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS}/app.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %X{method} - %X{path} - from IP: %X{clientIp} - %logger{36} - %msg - Response: %X{status} in %X{duration}ms%n</pattern>
+        </encoder>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS}/archived/app-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- LOG everything at INFO level -->
+    <root level="info">
+        <appender-ref ref="RollingFile" />
+        <appender-ref ref="Console" />
+    </root>
+
+    <!-- LOG "com.artventuria.api*" at DEBUG level -->
+    <logger name="com.artventuria.api" level="debug" additivity="false">
+        <appender-ref ref="RollingFile" />
+        <appender-ref ref="Console" />
+    </logger>
+
+    <!-- Database Connection Logging -->
+    <logger name="org.hibernate.SQL" level="INFO" />
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="INFO" />
+    <logger name="org.hibernate.stat" level="INFO" />
+    <logger name="org.hibernate.engine.internal.StatisticalLoggingSessionEventListener" level="INFO" />
+    <logger name="org.hibernate.engine.transaction.internal.TransactionImpl" level="INFO" />
+    <logger name="org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl" level="INFO" />
+    <logger name="org.hibernate.resource.transaction" level="INFO" />
+    
+    <!-- Spring Transaction Logging -->
+    <logger name="org.springframework.transaction" level="INFO" />
+    <logger name="org.springframework.orm.jpa" level="INFO" />
+    
+    <!-- MongoDB Connection Logging -->
+    <logger name="org.springframework.data.mongodb.core.MongoTemplate" level="INFO" />
+    <logger name="org.mongodb.driver" level="INFO" />
+    <logger name="org.mongodb.driver.connection" level="INFO" />
+    <logger name="org.mongodb.driver.cluster" level="INFO" />
+    
+    <!-- Connection Pool Logging -->
+    <logger name="com.zaxxer.hikari" level="INFO" />
+    <logger name="com.zaxxer.hikari.HikariConfig" level="INFO" />
+    <logger name="com.zaxxer.hikari.pool.HikariPool" level="INFO" />
+    <logger name="org.springframework.data.mongodb.core.MongoAdmin" level="INFO" />
+</configuration>
