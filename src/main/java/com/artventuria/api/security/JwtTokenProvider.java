@@ -77,7 +77,7 @@ public class JwtTokenProvider {
     public String generateRefreshToken(Authentication authentication) {
         org.springframework.security.core.userdetails.UserDetails userDetails = (org.springframework.security.core.userdetails.UserDetails) authentication
                 .getPrincipal();
-        String userEmail = userDetails.getUsername(); // In our case, username is the email
+        String userEmail = userDetails.getUsername(); // username is the email
 
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshTokenExpirationMs);
