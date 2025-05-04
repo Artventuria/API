@@ -1,0 +1,448 @@
+---
+openapi: 3.0.3
+info:
+  title: Artventuria API
+  description: API for the Artventuria mobile app - Discover art through NFC technology
+  version: 1.0.0
+  contact:
+    name: Artventuria
+    email: contact@artventuria.com
+    url: https://artventuria.com
+
+servers:
+  - url: https://api.artventuria.com/v1
+    description: Production
+  - url: http://localhost:8080/v1
+    description: Development
+
+tags:
+  - name: Auth
+    description: Authentication
+  - name: Users
+    description: User management
+  - name: Artworks
+    description: Artwork management
+  - name: NFC
+    description: NFC scanning and management
+  - name: Collections
+    description: User collections
+  - name: Badges
+    description: Badge system
+  - name: Notifications
+    description: Notification management
+
+paths:
+  /register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User successfully created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: Email already in use
+
+  /login:
+    post:
+      tags: [Auth]
+      summary: User login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get current user profile
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    put:
+      tags: [Users]
+      summary: Update user profile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /artworks:
+    get:
+      tags: [Artworks]
+      summary: List artworks
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          description: List of artworks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Artwork"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /artworks/{id}:
+    get:
+      tags: [Artworks]
+      summary: Get artwork details
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Artwork details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Artwork"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /nfc/scan:
+    post:
+      tags: [NFC]
+      summary: Scan artwork via NFC
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nfc_token, location]
+              properties:
+                nfc_token:
+                  type: string
+                location:
+                  type: string
+      responses:
+        "200":
+          description: Scan successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanResponse"
+        "404":
+          description: NFC tag not found
+
+  /nfc/history:
+    get:
+      tags: [NFC]
+      summary: Get scan history
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Scan history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScanLog"
+
+  /collections:
+    get:
+      tags: [Collections]
+      summary: Get user collection
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User collection
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CollectionItem"
+
+  /badges:
+    get:
+      tags: [Badges]
+      summary: List available badges
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of badges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Badge"
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: Resource identifier
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+      description: Page number
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 20
+        maximum: 100
+      description: Items per page
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        points:
+          type: integer
+        isAdmin:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+
+    Artwork:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        artist:
+          type: string
+        description:
+          type: string
+        creationDate:
+          type: string
+          format: date
+        historicalContext:
+          type: string
+        rarityPoints:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ScanResponse:
+      type: object
+      properties:
+        artwork:
+          $ref: "#/components/schemas/Artwork"
+        pointsEarned:
+          type: integer
+        badgesEarned:
+          type: array
+          items:
+            $ref: "#/components/schemas/Badge"
+
+    ScanLog:
+      type: object
+      properties:
+        id:
+          type: string
+        artworkId:
+          type: integer
+        location:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        artwork:
+          $ref: "#/components/schemas/Artwork"
+
+    CollectionItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        artworkId:
+          type: integer
+        acquisitionDate:
+          type: string
+          format: date-time
+        artwork:
+          $ref: "#/components/schemas/Artwork"
+
+    Badge:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        points:
+          type: integer
+        criteria:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [new_exhibition, new_artwork, badge_earned, rank_update]
+        title:
+          type: string
+        body:
+          type: string
+        data:
+          type: object
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
