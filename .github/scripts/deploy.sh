@@ -60,7 +60,10 @@ EOL
   sudo amazon-linux-extras install epel -y
   # Install pip if not already installed
   sudo yum -y install python3-pip
-  # Install certbot via pip
+  # Install certbot via pip with compatible dependencies
+  # First downgrade urllib3 to a version compatible with the system's OpenSSL
+  sudo pip3 install 'urllib3<2.0'
+  # Then install certbot
   sudo pip3 install certbot certbot-nginx
   # Create necessary directory if it doesn't exist
   sudo mkdir -p /etc/letsencrypt/live/api.artventuria.com/
