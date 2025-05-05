@@ -33,8 +33,8 @@ EOL
     sudo amazon-linux-extras install nginx1 -y
   fi
 
-  # Configure Nginx initial setup (HTTP only)
-  sudo tee /etc/nginx/conf.d/api.artventuria.com.conf << EOL
+  # Configure Nginx initial setup (HTTP only) using cat with single quotes for nginx variables
+  cat > nginx_config.tmp << 'EOLNGINX'
 server {
     listen 80;
     server_name api.artventuria.com;
@@ -46,10 +46,16 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
-EOL
+EOLNGINX
+  sudo tee /etc/nginx/conf.d/api.artventuria.com.conf < nginx_config.tmp
 
   # Restart nginx with HTTP configuration
-  sudo systemctl restart nginx
+  if ! sudo systemctl restart nginx; then
+    echo "Nginx failed to start, checking error logs..."
+    sudo systemctl status nginx.service
+    sudo journalctl -xe --no-pager | grep nginx | tail -n 50
+    exit 1
+  fi
 
   # Install Certbot and request SSL certificate
   # First enable EPEL repository
@@ -77,7 +83,8 @@ EOL
 
   # Now update Nginx configuration with SSL if certificates were obtained
   if [ -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
-    sudo tee /etc/nginx/conf.d/api.artventuria.com.conf << EOL
+    # Use cat with single quotes to preserve nginx variables
+    cat > nginx_ssl_config.tmp << 'EOLSSLNGINX'
 server {
     listen 80;
     server_name api.artventuria.com;
@@ -96,8 +103,15 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
-EOL
-    sudo systemctl restart nginx  # Restart nginx to apply the SSL config
+EOLSSLNGINX
+    sudo tee /etc/nginx/conf.d/api.artventuria.com.conf < nginx_ssl_config.tmp
+    # Restart nginx to apply the SSL config
+    if ! sudo systemctl restart nginx; then
+      echo "Nginx failed to start with SSL configuration, checking error logs..."
+      sudo systemctl status nginx.service
+      sudo journalctl -xe --no-pager | grep nginx | tail -n 50
+      exit 1
+    fi
   fi
 
   # Log into Docker Hub again
