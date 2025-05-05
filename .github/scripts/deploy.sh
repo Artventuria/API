@@ -33,18 +33,11 @@ EOL
     sudo amazon-linux-extras install nginx1 -y
   fi
 
-  # Configure Nginx with SSL (Let's Encrypt)
+  # Configure Nginx initial setup (HTTP only)
   sudo tee /etc/nginx/conf.d/api.artventuria.com.conf << 'EOL'
 server {
     listen 80;
     server_name api.artventuria.com;
-    return 301 https://$server_name$request_uri;
-}
-server {
-    listen 443 ssl;
-    server_name api.artventuria.com;
-    ssl_certificate /etc/letsencrypt/live/api.artventuria.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/api.artventuria.com/privkey.pem;
     location / {
         proxy_pass http://localhost:8001;
         proxy_set_header Host $host;
@@ -54,6 +47,9 @@ server {
     }
 }
 EOL
+
+  # Restart nginx with HTTP configuration
+  sudo systemctl restart nginx
 
   # Install Certbot and request SSL certificate
   # First enable EPEL repository
@@ -79,7 +75,30 @@ EOL
     fi
   fi
 
-  sudo systemctl restart nginx  # Restart nginx to apply the new config
+  # Now update Nginx configuration with SSL if certificates were obtained
+  if [ -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
+    sudo tee /etc/nginx/conf.d/api.artventuria.com.conf << 'EOL'
+server {
+    listen 80;
+    server_name api.artventuria.com;
+    return 301 https://$server_name$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name api.artventuria.com;
+    ssl_certificate /etc/letsencrypt/live/api.artventuria.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.artventuria.com/privkey.pem;
+    location / {
+        proxy_pass http://localhost:8001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+EOL
+    sudo systemctl restart nginx  # Restart nginx to apply the SSL config
+  fi
 
   # Log into Docker Hub again
   echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
