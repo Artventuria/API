@@ -58,7 +58,7 @@ JWT_SECRET=$JWT_SECRET
 EOL
 
   # Install docker-compose if not available
-  if ! command -v docker compose &> /dev/null; then
+  if ! command -v docker-compose &> /dev/null; then
     sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     sudo chmod +x /usr/local/bin/docker-compose
   fi
@@ -122,9 +122,9 @@ EOL
   echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 
   # Pull and deploy the Docker container
-  docker compose -f docker-compose.prod.yml down || true
-  docker compose -f docker-compose.prod.yml pull
-  docker compose -f docker-compose.prod.yml up -d
+  docker-compose -f docker-compose.prod.yml down || true
+  docker-compose -f docker-compose.prod.yml pull
+  docker-compose -f docker-compose.prod.yml up -d
 
   # Set up systemd service to manage the Docker Compose app
   sudo tee /etc/systemd/system/artventuria-api.service << EOL
