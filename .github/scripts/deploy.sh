@@ -104,8 +104,13 @@ EOL
   echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 
   # Deploy the Docker container
+  # Stop and remove existing docker-compose services
   docker-compose -f docker-compose.prod.yml down || true
+  # Force remove any stuck containers with the name artventuria-api
+  docker rm -f artventuria-api || true
+  # Pull latest images
   docker-compose -f docker-compose.prod.yml pull
+  # Start containers
   docker-compose -f docker-compose.prod.yml up -d
 
   # Set up systemd service to manage the Docker Compose app
