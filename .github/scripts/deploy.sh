@@ -70,7 +70,13 @@ EOL
   
   if [ ! -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
     # Use full path to certbot since pip installs it to /usr/local/bin which may not be in PATH
-    sudo /usr/local/bin/certbot --nginx -d api.artventuria.com --non-interactive --agree-tos -m ${CERTBOT_EMAIL}
+    # Check if CERTBOT_EMAIL is set and not empty
+    if [ -n "${CERTBOT_EMAIL}" ]; then
+      sudo /usr/local/bin/certbot --nginx -d api.artventuria.com --non-interactive --agree-tos -m "${CERTBOT_EMAIL}"
+    else
+      # Run without email argument if it's not set
+      sudo /usr/local/bin/certbot --nginx -d api.artventuria.com --non-interactive --agree-tos --register-unsafely-without-email
+    fi
   fi
 
   sudo systemctl restart nginx  # Restart nginx to apply the new config
