@@ -1,12 +1,48 @@
 #!/bin/bash
 set -e
 
+# Create nginx configuration files locally
+cat > nginx-http.conf << 'EOL'
+server {
+    listen 80;
+    server_name api.artventuria.com;
+    location / {
+        proxy_pass http://localhost:8001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+EOL
+
+cat > nginx-ssl.conf << 'EOL'
+server {
+    listen 80;
+    server_name api.artventuria.com;
+    return 301 https://$server_name$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name api.artventuria.com;
+    ssl_certificate /etc/letsencrypt/live/api.artventuria.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.artventuria.com/privkey.pem;
+    location / {
+        proxy_pass http://localhost:8001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+EOL
+
 # Initiate ControlMaster with a simple SSH connection
 ssh ec2 "echo Connected"
 
-# Copy the docker-compose file to the server
+# Copy the docker-compose file and nginx configurations to the server
 ssh ec2 "mkdir -p ~/artventuria-deploy"
-scp docker-compose.prod.yml ec2:~/artventuria-deploy/
+scp docker-compose.prod.yml nginx-http.conf nginx-ssl.conf ec2:~/artventuria-deploy/
 
 # Execute deployment on the server
 ssh ec2 << EOSSH
@@ -33,22 +69,9 @@ EOL
     sudo amazon-linux-extras install nginx1 -y
   fi
 
-  # Configure Nginx initial setup (HTTP only) using cat with single quotes for nginx variables
-  # Create the nginx configuration file with escaped variables
-  cat > nginx_config.tmp << EOF
-server {
-    listen 80;
-    server_name api.artventuria.com;
-    location / {
-        proxy_pass http://localhost:8001;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
-EOF
-  sudo tee /etc/nginx/conf.d/api.artventuria.com.conf < nginx_config.tmp
+  # Configure Nginx initial setup (HTTP only)
+  # Use the pre-created nginx configuration file
+  sudo cp ~/artventuria-deploy/nginx-http.conf /etc/nginx/conf.d/api.artventuria.com.conf
 
   # Restart nginx with HTTP configuration
   if ! sudo systemctl restart nginx; then
@@ -84,28 +107,8 @@ EOF
 
   # Now update Nginx configuration with SSL if certificates were obtained
   if [ -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
-    #  Create the SSL configuration file with escaped variables
-    cat > nginx_ssl_config.tmp << EOF
-server {
-    listen 80;
-    server_name api.artventuria.com;
-    return 301 https://\$server_name\$request_uri;
-}
-server {
-    listen 443 ssl;
-    server_name api.artventuria.com;
-    ssl_certificate /etc/letsencrypt/live/api.artventuria.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/api.artventuria.com/privkey.pem;
-    location / {
-        proxy_pass http://localhost:8001;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
-EOF
-    sudo tee /etc/nginx/conf.d/api.artventuria.com.conf < nginx_ssl_config.tmp
+    # Use the pre-created SSL configuration file
+    sudo cp ~/artventuria-deploy/nginx-ssl.conf /etc/nginx/conf.d/api.artventuria.com.conf
     # Restart nginx to apply the SSL config
     if ! sudo systemctl restart nginx; then
       echo "Nginx failed to start with SSL configuration, checking error logs..."
