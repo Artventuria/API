@@ -34,7 +34,7 @@ EOL
   fi
 
   # Configure Nginx initial setup (HTTP only)
-  sudo tee /etc/nginx/conf.d/api.artventuria.com.conf << 'EOL'
+  sudo tee /etc/nginx/conf.d/api.artventuria.com.conf << EOL
 server {
     listen 80;
     server_name api.artventuria.com;
@@ -77,7 +77,7 @@ EOL
 
   # Now update Nginx configuration with SSL if certificates were obtained
   if [ -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
-    sudo tee /etc/nginx/conf.d/api.artventuria.com.conf << 'EOL'
+    sudo tee /etc/nginx/conf.d/api.artventuria.com.conf << EOL
 server {
     listen 80;
     server_name api.artventuria.com;
@@ -109,7 +109,7 @@ EOL
   docker compose -f docker-compose.prod.yml up -d
 
   # Set up systemd service to manage the Docker Compose app
-  sudo tee /etc/systemd/system/artventuria-api.service << 'EOL'
+  sudo tee /etc/systemd/system/artventuria-api.service << EOL
 [Unit]
 Description=Artventuria API Docker Compose
 Requires=docker.service
