@@ -9,12 +9,12 @@ ssh ec2 "mkdir -p ~/artventuria-deploy"
 scp docker-compose.prod.yml ec2:~/artventuria-deploy/
 
 # Execute deployment on the server
-ssh ec2 << 'EOSSH'
+ssh ec2 << EOSSH
   set -e
   cd ~/artventuria-deploy
   
   # Create an environment file with sensitive variables
-  cat > .env << 'EOL'
+  cat > .env << EOL
 DOCKER_USERNAME=$DOCKER_USERNAME
 GITHUB_REF_NAME=$GITHUB_REF_NAME
 DATABASE_PASSWORD=$DATABASE_PASSWORD
