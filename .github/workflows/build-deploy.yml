@@ -20,6 +20,11 @@ jobs:
           distribution: "temurin"
           cache: "maven"
 
+      - name: Setup Firebase config
+        run: |
+          mkdir -p src/main/resources/config
+          echo "${{ secrets.FIREBASE_CONFIG_JSON }}" | base64 -d > src/main/resources/config/artventuria-v1-firebase-adminsdk-fbsvc-f1f7233991.json
+
       - name: Build with Maven
         run: mvn -B package --file pom.xml  # Build the application using Maven
 
@@ -42,10 +47,7 @@ jobs:
           chmod 600 ~/.ssh/artventuria-key  # Set proper permissions for the SSH key
           echo -e "Host ec2\n  HostName ${{ secrets.SERVER_HOST }}\n  User ec2-user\n  IdentityFile ~/.ssh/artventuria-key\n  StrictHostKeyChecking no\n  ControlMaster auto\n  ControlPath ~/.ssh/cm_socket_%r@%h:%p\n  ControlPersist 10m" > ~/.ssh/config  # Configure SSH for ControlMaster to reuse connections
 
-      - name: Setup Firebase config
-        run: |
-          mkdir -p src/main/resources/config
-          echo "${{ secrets.FIREBASE_CONFIG_JSON }}" | base64 -d > src/main/resources/config/artventuria-v1-firebase-adminsdk-fbsvc-f1f7233991.json
+
 
       - name: Make deploy script executable
         run: chmod +x .github/scripts/deploy.sh
