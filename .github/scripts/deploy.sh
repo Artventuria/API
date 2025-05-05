@@ -56,7 +56,15 @@ server {
 EOL
 
   # Install Certbot and request SSL certificate
-  sudo yum install -y certbot python3-certbot-nginx || true
+  # First enable EPEL repository
+  sudo amazon-linux-extras install epel -y
+  # Install pip if not already installed
+  sudo yum -y install python3-pip
+  # Install certbot via pip
+  sudo pip3 install certbot certbot-nginx
+  # Create necessary directory if it doesn't exist
+  sudo mkdir -p /etc/letsencrypt/live/api.artventuria.com/
+  
   if [ ! -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
     sudo certbot --nginx -d api.artventuria.com --non-interactive --agree-tos -m ${CERTBOT_EMAIL}
   fi
