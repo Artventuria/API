@@ -59,8 +59,22 @@ EOL
 
   # Install docker-compose if not available
   if ! command -v docker-compose &> /dev/null; then
-    sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    sudo chmod +x /usr/local/bin/docker-compose
+    echo "Installing docker-compose..."
+    # Option 1: Installation par pip (plus fiable)
+    sudo pip3 install docker-compose
+    
+    # Si l'installation par pip échoue, essayer le téléchargement direct
+    if ! command -v docker-compose &> /dev/null; then
+      echo "Pip installation failed, trying direct download..."
+      sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+      sudo chmod +x /usr/local/bin/docker-compose
+      
+      # Vérifier que docker-compose fonctionne correctement
+      if ! docker-compose --version; then
+        echo "Error: docker-compose installation failed!"
+        exit 1
+      fi
+    fi
   fi
 
   # Install nginx if not available
