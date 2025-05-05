@@ -55,27 +55,13 @@ DOCKER_USERNAME=$DOCKER_USERNAME
 GITHUB_REF_NAME=$GITHUB_REF_NAME
 DATABASE_PASSWORD=$DATABASE_PASSWORD
 JWT_SECRET=$JWT_SECRET
+FIREBASE_CONFIG_PATH=$FIREBASE_CONFIG_PATH
+FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID
+AWS_SES_REGION=$AWS_SES_REGION
+AWS_SES_FROM_EMAIL=$AWS_SES_FROM_EMAIL
+FRONTEND_URL=$FRONTEND_URL
+CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS
 EOL
-
-  # Install docker-compose if not available
-  if ! command -v docker-compose &> /dev/null; then
-    echo "Installing docker-compose..."
-    # Option 1: Installation par pip (plus fiable)
-    sudo pip3 install docker-compose
-    
-    # Si l'installation par pip échoue, essayer le téléchargement direct
-    if ! command -v docker-compose &> /dev/null; then
-      echo "Pip installation failed, trying direct download..."
-      sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-      sudo chmod +x /usr/local/bin/docker-compose
-      
-      # Vérifier que docker-compose fonctionne correctement
-      if ! docker-compose --version; then
-        echo "Error: docker-compose installation failed!"
-        exit 1
-      fi
-    fi
-  fi
 
   # Install nginx if not available
   if ! command -v nginx &> /dev/null; then
@@ -84,58 +70,40 @@ EOL
   fi
 
   # Configure Nginx initial setup (HTTP only)
-  # Use the pre-created nginx configuration file
   sudo cp ~/artventuria-deploy/nginx-http.conf /etc/nginx/conf.d/api.artventuria.com.conf
+  sudo systemctl restart nginx
 
-  # Restart nginx with HTTP configuration
-  if ! sudo systemctl restart nginx; then
-    echo "Nginx failed to start, checking error logs..."
-    sudo systemctl status nginx.service
-    sudo journalctl -xe --no-pager | grep nginx | tail -n 50
-    exit 1
-  fi
-
-  # Install Certbot and request SSL certificate
-  # First enable EPEL repository
-  sudo amazon-linux-extras install epel -y
-  # Install pip if not already installed
-  sudo yum -y install python3-pip
-  # Install certbot via pip with compatible dependencies
-  # First downgrade urllib3 to a version compatible with the system's OpenSSL
-  sudo pip3 install 'urllib3<2.0'
-  # Then install certbot
-  sudo pip3 install certbot certbot-nginx
-  # Create necessary directory if it doesn't exist
-  sudo mkdir -p /etc/letsencrypt/live/api.artventuria.com/
-  
+  # Certbot SSL configuration - only if certificates don't exist
   if [ ! -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
-    # Use full path to certbot since pip installs it to /usr/local/bin which may not be in PATH
-    # Check if CERTBOT_EMAIL is set and not empty
+    # Install Certbot if needed
+    if ! command -v certbot &> /dev/null; then
+      sudo amazon-linux-extras install epel -y
+      sudo pip3 install 'urllib3<2.0'
+      sudo pip3 install certbot certbot-nginx
+    fi
+    
+    # Request certificate
     if [ -n "${CERTBOT_EMAIL}" ]; then
       sudo /usr/local/bin/certbot --nginx -d api.artventuria.com --non-interactive --agree-tos -m "${CERTBOT_EMAIL}"
     else
-      # Run without email argument if it's not set
       sudo /usr/local/bin/certbot --nginx -d api.artventuria.com --non-interactive --agree-tos --register-unsafely-without-email
     fi
-  fi
-
-  # Now update Nginx configuration with SSL if certificates were obtained
-  if [ -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
-    # Use the pre-created SSL configuration file
-    sudo cp ~/artventuria-deploy/nginx-ssl.conf /etc/nginx/conf.d/api.artventuria.com.conf
-    # Restart nginx to apply the SSL config
-    if ! sudo systemctl restart nginx; then
-      echo "Nginx failed to start with SSL configuration, checking error logs..."
-      sudo systemctl status nginx.service
-      sudo journalctl -xe --no-pager | grep nginx | tail -n 50
-      exit 1
+    
+    # Update to SSL configuration if certificates were created
+    if [ -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
+      sudo cp ~/artventuria-deploy/nginx-ssl.conf /etc/nginx/conf.d/api.artventuria.com.conf
+      sudo systemctl restart nginx
     fi
+  else
+    # Certificates already exist, use SSL config
+    sudo cp ~/artventuria-deploy/nginx-ssl.conf /etc/nginx/conf.d/api.artventuria.com.conf
+    sudo systemctl restart nginx
   fi
 
-  # Log into Docker Hub again
+  # Log into Docker Hub
   echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 
-  # Pull and deploy the Docker container
+  # Deploy the Docker container
   docker-compose -f docker-compose.prod.yml down || true
   docker-compose -f docker-compose.prod.yml pull
   docker-compose -f docker-compose.prod.yml up -d
