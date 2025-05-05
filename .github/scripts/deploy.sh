@@ -30,7 +30,7 @@ EOL
   # Install nginx if not available
   if ! command -v nginx &> /dev/null; then
     sudo yum update -y
-    sudo yum install -y nginx
+    sudo amazon-linux-extras install nginx1 -y
   fi
 
   # Configure Nginx with SSL (Let's Encrypt)
