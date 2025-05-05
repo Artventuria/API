@@ -25,7 +25,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/artventuria-api-java:${{ github.ref_name }} -f .deploy/Dockerfile .  # Build the Docker image
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }} -f .deploy/Dockerfile .  # Build the Docker image
 
       - name: Log in to Docker Hub
         run: |
@@ -33,7 +33,7 @@ jobs:
 
       - name: Push Docker image to Docker Hub
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/artventuria-api-java:${{ github.ref_name }}  # Push the built image to Docker Hub
+          docker push ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }}  # Push the built image to Docker Hub
 
       - name: Configure SSH and Enable ControlMaster
         run: |
