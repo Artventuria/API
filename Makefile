@@ -47,7 +47,7 @@ run: ## Run the application in production mode
 
 .PHONY: dev
 dev: ## Run the application in development mode
-	$(MVN) spring-boot:run $(MVN_PROFILE_DEV) $(MVN_OPTS)
+	$(MVN) spring-boot:run $(MVN_PROFILE_DEV) -Dspring-boot.run.profiles=dev $(MVN_OPTS)
 
 .PHONY: clean
 clean: ## Clean all build directories
