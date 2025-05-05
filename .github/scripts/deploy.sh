@@ -34,19 +34,20 @@ EOL
   fi
 
   # Configure Nginx initial setup (HTTP only) using cat with single quotes for nginx variables
-  cat > nginx_config.tmp << 'EOLNGINX'
+  # Create the nginx configuration file with escaped variables
+  cat > nginx_config.tmp << EOF
 server {
     listen 80;
     server_name api.artventuria.com;
     location / {
         proxy_pass http://localhost:8001;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
     }
 }
-EOLNGINX
+EOF
   sudo tee /etc/nginx/conf.d/api.artventuria.com.conf < nginx_config.tmp
 
   # Restart nginx with HTTP configuration
@@ -83,12 +84,12 @@ EOLNGINX
 
   # Now update Nginx configuration with SSL if certificates were obtained
   if [ -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
-    # Use cat with single quotes to preserve nginx variables
-    cat > nginx_ssl_config.tmp << 'EOLSSLNGINX'
+    #  Create the SSL configuration file with escaped variables
+    cat > nginx_ssl_config.tmp << EOF
 server {
     listen 80;
     server_name api.artventuria.com;
-    return 301 https://$server_name$request_uri;
+    return 301 https://\$server_name\$request_uri;
 }
 server {
     listen 443 ssl;
@@ -97,13 +98,13 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/api.artventuria.com/privkey.pem;
     location / {
         proxy_pass http://localhost:8001;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
     }
 }
-EOLSSLNGINX
+EOF
     sudo tee /etc/nginx/conf.d/api.artventuria.com.conf < nginx_ssl_config.tmp
     # Restart nginx to apply the SSL config
     if ! sudo systemctl restart nginx; then
