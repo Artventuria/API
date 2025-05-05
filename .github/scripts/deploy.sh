@@ -66,7 +66,8 @@ EOL
   sudo mkdir -p /etc/letsencrypt/live/api.artventuria.com/
   
   if [ ! -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
-    sudo certbot --nginx -d api.artventuria.com --non-interactive --agree-tos -m ${CERTBOT_EMAIL}
+    # Use full path to certbot since pip installs it to /usr/local/bin which may not be in PATH
+    sudo /usr/local/bin/certbot --nginx -d api.artventuria.com --non-interactive --agree-tos -m ${CERTBOT_EMAIL}
   fi
 
   sudo systemctl restart nginx  # Restart nginx to apply the new config
