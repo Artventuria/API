@@ -42,7 +42,10 @@ jobs:
 
       - name: Configure SSH and Enable ControlMaster
         run: |
-          mkdir -p ~/.ssh  # Create the SSH directory if it doesn't exist
+          mkdir -p ~/.ssh
+          echo "===== Debugging SSH Setup ===="
+          echo "GitHub runner environment: $(uname -a)"
+          
           # Create a script to handle passphrase
           cat > ~/.ssh/key_script.sh << 'EOF'
           #!/bin/bash
@@ -50,15 +53,27 @@ jobs:
           EOF
           chmod 700 ~/.ssh/key_script.sh
           
-          # Decode and save the private key
-          echo "${{ secrets.SERVER_SSH_KEY }}" | base64 -d > ~/.ssh/artventuria-key
+          # Decode and save the private key (with error checking)
+          echo "${{ secrets.SERVER_SSH_KEY }}" | base64 -d > ~/.ssh/artventuria-key 2>~/.ssh/base64_error.log
+          if [ $? -ne 0 ]; then
+            echo "ERROR: Failed to decode base64 key - see error:"
+            cat ~/.ssh/base64_error.log
+            echo "First few characters of the encoded key: $(echo "${{ secrets.SERVER_SSH_KEY }}" | cut -c1-20)..."
+          fi
           chmod 600 ~/.ssh/artventuria-key
           
+          # Check private key format
+          echo "Private key first line: $(head -n 1 ~/.ssh/artventuria-key)"
+          echo "Private key type: $(ssh-keygen -l -f ~/.ssh/artventuria-key 2>&1 || echo 'Could not determine key type')"
+          
           # Configuration for Oracle Cloud
-          echo -e "Host oci\n  HostName ${{ secrets.SERVER_HOST }}\n  User ${{ secrets.SERVER_USER }}\n  IdentityFile ~/.ssh/artventuria-key\n  StrictHostKeyChecking no\n  ControlMaster auto\n  ControlPath ~/.ssh/cm_socket_%r@%h:%p\n  ControlPersist 10m\n  PreferredAuthentications publickey" > ~/.ssh/config
-
-          # Test the connection
-          SSH_ASKPASS=~/.ssh/key_script.sh setsid -w ssh -o StrictHostKeyChecking=no oci 'echo "SSH connection successful"' || echo "SSH connection failed"
+          echo -e "Host oci\n  HostName ${{ secrets.SERVER_HOST }}\n  User ${{ secrets.SERVER_USER }}\n  IdentityFile ~/.ssh/artventuria-key\n  StrictHostKeyChecking no\n  ControlMaster auto\n  ControlPath ~/.ssh/cm_socket_%r@%h:%p\n  ControlPersist 10m\n  PreferredAuthentications publickey\n  LogLevel DEBUG3" > ~/.ssh/config
+          
+          echo "===== SSH Config ===="
+          cat ~/.ssh/config
+          
+          echo "===== Testing SSH connection with verbose output ===="
+          ssh -v -o StrictHostKeyChecking=no oci 'echo "SSH connection successful"' || echo "SSH connection failed"
 
       - name: Make deploy script executable
         run: chmod +x .github/scripts/deploy-oci.sh
