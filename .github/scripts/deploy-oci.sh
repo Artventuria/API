@@ -85,12 +85,18 @@ EOL
       sudo ln -sf /usr/local/bin/certbot /usr/bin/certbot
     fi
     
-    # Request certificate
+    # Temporarily stop nginx to free port 80 for certbot standalone
+    sudo systemctl stop nginx
+    
+    # Request certificate in standalone mode
     if [ -n "${CERTBOT_EMAIL}" ]; then
-      sudo certbot --nginx -d api.artventuria.com --non-interactive --agree-tos -m "${CERTBOT_EMAIL}"
+      sudo certbot certonly --standalone -d api.artventuria.com --non-interactive --agree-tos -m "${CERTBOT_EMAIL}"
     else
-      sudo certbot --nginx -d api.artventuria.com --non-interactive --agree-tos --register-unsafely-without-email
+      sudo certbot certonly --standalone -d api.artventuria.com --non-interactive --agree-tos --register-unsafely-without-email
     fi
+    
+    # Restart nginx after certbot is done
+    sudo systemctl start nginx
     
     # Update to SSL configuration if certificates were created
     if [ -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
