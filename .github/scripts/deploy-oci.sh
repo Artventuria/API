@@ -103,8 +103,8 @@ aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
 AWSEOF
     chmod 600 ~/.aws/credentials
     
-    # Use official Certbot Docker image with Route53 plugin
-    CERTBOT_OPTS="certonly --dns-route53 -d api.artventuria.com --non-interactive --agree-tos"
+    # Use official Certbot Docker image with Route53 plugin - explicitly with certonly command
+    CERTBOT_OPTS="certonly --authenticator dns-route53 --installer none -d api.artventuria.com --non-interactive --agree-tos"
     
     if [ -n "${CERTBOT_EMAIL}" ]; then
       CERTBOT_OPTS="$CERTBOT_OPTS -m ${CERTBOT_EMAIL}"
