@@ -85,6 +85,9 @@ EOL
       sudo ln -sf /usr/local/bin/certbot /usr/bin/certbot
     fi
     
+    # Update urllib3 to avoid SSL verification issues
+    sudo pip3 install --upgrade urllib3
+    
     # Install the certbot-dns-route53 plugin
     sudo pip3 install certbot-dns-route53
     
