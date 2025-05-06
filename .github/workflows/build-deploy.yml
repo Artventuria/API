@@ -28,37 +28,39 @@ jobs:
       - name: Build with Maven
         run: mvn -B package --file pom.xml  # Build the application using Maven
 
-      - name: Build Docker image
-        run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }} -f .deploy/Dockerfile .  # Build the Docker image
-
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
       - name: Log in to Docker Hub
-        run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin  # Log into Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Push Docker image to Docker Hub
-        run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }}  # Push the built image to Docker Hub
+      - name: Build and push multi-architecture image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: .deploy/Dockerfile
+          platforms: linux/amd64,linux/arm64  # Build for both Intel/AMD and ARM architectures
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/artventuria-api:${{ github.ref_name }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/artventuria-api:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/artventuria-api:buildcache,mode=max
 
-      - name: Configure SSH and Enable ControlMaster
+      - name: Configure SSH
         run: |
-          mkdir -p ~/.ssh  # Create the SSH directory if it doesn't exist
-          # Create a script to handle passphrase
-          cat > ~/.ssh/key_script.sh << 'EOF'
-          #!/bin/bash
-          echo "${{ secrets.SERVER_SSH_PASSPHRASE }}"
-          EOF
-          chmod 700 ~/.ssh/key_script.sh
+          mkdir -p ~/.ssh
           
-          # Decode and save the private key
-          echo "${{ secrets.SERVER_SSH_KEY }}" | base64 -d > ~/.ssh/artventuria-key
-          chmod 600 ~/.ssh/artventuria-key
+          # Decode the private key
+          echo "${{ secrets.SERVER_SSH_KEY }}" | base64 -d > ~/.ssh/deploy-key
+          chmod 600 ~/.ssh/deploy-key
           
-          # Configuration for Oracle Cloud
-          echo -e "Host oci\n  HostName ${{ secrets.SERVER_HOST }}\n  User ${{ secrets.SERVER_USER }}\n  IdentityFile ~/.ssh/artventuria-key\n  StrictHostKeyChecking no\n  ControlMaster auto\n  ControlPath ~/.ssh/cm_socket_%r@%h:%p\n  ControlPersist 10m\n  PreferredAuthentications publickey" > ~/.ssh/config
-
-          # Test the connection
-          SSH_ASKPASS=~/.ssh/key_script.sh setsid -w ssh -o StrictHostKeyChecking=no oci 'echo "SSH connection successful"' || echo "SSH connection failed"
+          # Configure SSH
+          echo -e "Host oci\n  HostName ${{ secrets.SERVER_HOST }}\n  User ${{ secrets.SERVER_USER }}\n  IdentityFile ~/.ssh/deploy-key\n  StrictHostKeyChecking no" > ~/.ssh/config
+          
+          # Test connection
+          ssh -o StrictHostKeyChecking=no oci 'echo "SSH connection successful"'
 
       - name: Make deploy script executable
         run: chmod +x .github/scripts/deploy-oci.sh
@@ -77,4 +79,7 @@ jobs:
           AWS_SES_FROM_EMAIL: ${{ secrets.AWS_SES_FROM_EMAIL }}
           FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
           CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
+          # AWS credentials for Route53 DNS validation
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: .github/scripts/deploy-oci.sh
