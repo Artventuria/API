@@ -38,14 +38,14 @@ server {
 EOL
 
 # Initiate ControlMaster with a simple SSH connection
-ssh ec2 "echo Connected"
+ssh oci "echo Connected"
 
 # Copy the docker-compose file and nginx configurations to the server
-ssh ec2 "mkdir -p ~/artventuria-deploy"
-scp docker-compose.prod.yml nginx-http.conf nginx-ssl.conf ec2:~/artventuria-deploy/
+ssh oci "mkdir -p ~/artventuria-deploy"
+scp docker-compose.prod.yml nginx-http.conf nginx-ssl.conf oci:~/artventuria-deploy/
 
 # Execute deployment on the server
-ssh ec2 << EOSSH
+ssh oci << EOSSH
   set -e
   cd ~/artventuria-deploy
   
@@ -65,11 +65,12 @@ EOL
 
   # Install nginx if not available
   if ! command -v nginx &> /dev/null; then
-    sudo yum update -y
-    sudo amazon-linux-extras install nginx1 -y
+    sudo dnf update -y
+    sudo dnf install -y nginx
   fi
 
   # Configure Nginx initial setup (HTTP only)
+  sudo mkdir -p /etc/nginx/conf.d
   sudo cp ~/artventuria-deploy/nginx-http.conf /etc/nginx/conf.d/api.artventuria.com.conf
   sudo systemctl restart nginx
 
@@ -77,16 +78,15 @@ EOL
   if [ ! -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
     # Install Certbot if needed
     if ! command -v certbot &> /dev/null; then
-      sudo amazon-linux-extras install epel -y
-      sudo pip3 install 'urllib3<2.0'
-      sudo pip3 install certbot certbot-nginx
+      sudo dnf install -y epel-release
+      sudo dnf install -y certbot python3-certbot-nginx
     fi
     
     # Request certificate
     if [ -n "${CERTBOT_EMAIL}" ]; then
-      sudo /usr/local/bin/certbot --nginx -d api.artventuria.com --non-interactive --agree-tos -m "${CERTBOT_EMAIL}"
+      sudo certbot --nginx -d api.artventuria.com --non-interactive --agree-tos -m "${CERTBOT_EMAIL}"
     else
-      sudo /usr/local/bin/certbot --nginx -d api.artventuria.com --non-interactive --agree-tos --register-unsafely-without-email
+      sudo certbot --nginx -d api.artventuria.com --non-interactive --agree-tos --register-unsafely-without-email
     fi
     
     # Update to SSL configuration if certificates were created
@@ -123,7 +123,7 @@ After=docker.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-WorkingDirectory=/home/ec2-user/artventuria-deploy
+WorkingDirectory=/home/opc/artventuria-deploy
 ExecStart=/usr/local/bin/docker-compose -f docker-compose.prod.yml up -d
 ExecStop=/usr/local/bin/docker-compose -f docker-compose.prod.yml down
 TimeoutStartSec=0

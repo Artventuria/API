@@ -45,12 +45,13 @@ jobs:
           mkdir -p ~/.ssh  # Create the SSH directory if it doesn't exist
           echo "${{ secrets.SERVER_SSH_KEY }}" | base64 -d > ~/.ssh/artventuria-key  # Decode and save the SSH private key
           chmod 600 ~/.ssh/artventuria-key  # Set proper permissions for the SSH key
-          echo -e "Host ec2\n  HostName ${{ secrets.SERVER_HOST }}\n  User ec2-user\n  IdentityFile ~/.ssh/artventuria-key\n  StrictHostKeyChecking no\n  ControlMaster auto\n  ControlPath ~/.ssh/cm_socket_%r@%h:%p\n  ControlPersist 10m" > ~/.ssh/config  # Configure SSH for ControlMaster to reuse connections
+          # Configuration for Oracle Cloud
+          echo -e "Host oci\n  HostName ${{ secrets.SERVER_HOST }}\n  User opc\n  IdentityFile ~/.ssh/artventuria-key\n  StrictHostKeyChecking no\n  ControlMaster auto\n  ControlPath ~/.ssh/cm_socket_%r@%h:%p\n  ControlPersist 10m" > ~/.ssh/config  # Configure SSH for ControlMaster to reuse connections
 
 
 
       - name: Make deploy script executable
-        run: chmod +x .github/scripts/deploy.sh
+        run: chmod +x .github/scripts/deploy-oci.sh
 
       - name: Deploy to Server
         env:
@@ -66,4 +67,4 @@ jobs:
           AWS_SES_FROM_EMAIL: ${{ secrets.AWS_SES_FROM_EMAIL }}
           FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
           CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
-        run: .github/scripts/deploy.sh
+        run: .github/scripts/deploy-oci.sh
