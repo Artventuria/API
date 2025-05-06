@@ -5,6 +5,7 @@ version: "3.8"
 services:
   postgres:
     image: postgres:16
+    platform: linux/arm64
     container_name: postgres
     restart: unless-stopped
     environment:
@@ -16,35 +17,32 @@ services:
     networks:
       - artventuria-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
+    platform: linux/arm64
     container_name: zookeeper
     restart: unless-stopped
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-      # Set ZooKeeper heap options to use less memory
-      ZOOKEEPER_HEAP_OPTS: "-Xmx128m -Xms64m"
-    # Set container memory limits
-    deploy:
-      resources:
-        limits:
-          memory: 200M
+      # Optimized ZooKeeper heap options for Oracle Cloud
+      ZOOKEEPER_HEAP_OPTS: "-Xmx512m -Xms256m"
     networks:
       - artventuria-network
     healthcheck:
-      test: ["CMD-SHELL", "echo srvr | nc localhost 2181 || exit 1"]
+      test: [ "CMD-SHELL", "echo srvr | nc localhost 2181 || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   kafka:
     image: confluentinc/cp-kafka:7.4.0
+    platform: linux/arm64
     container_name: kafka
     restart: unless-stopped
     depends_on:
@@ -56,17 +54,12 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      # Set Kafka heap options to use less memory (256MB max)
-      KAFKA_HEAP_OPTS: "-Xmx256m -Xms128m"
-    # Set container memory limits
-    deploy:
-      resources:
-        limits:
-          memory: 350M
+      # Optimized Kafka heap options for Oracle Cloud
+      KAFKA_HEAP_OPTS: "-Xmx1g -Xms512m"
     networks:
       - artventuria-network
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka:9092 --list"]
+      test: [ "CMD-SHELL", "kafka-topics --bootstrap-server kafka:9092 --list" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -114,14 +107,13 @@ services:
       # Other environment variables
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: prod
-
       # Add any other environment variables your application needs
     ports:
       - "8001:8080"
     networks:
       - artventuria-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -129,6 +121,7 @@ services:
 
   mongodb:
     image: mongo:5
+    platform: linux/arm64
     container_name: mongodb
     restart: unless-stopped
     environment:
