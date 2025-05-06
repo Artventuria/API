@@ -94,6 +94,11 @@ EOL
       sudo systemctl start docker
     fi
     
+    # Ensure current user is in docker group
+    sudo usermod -aG docker $USER
+    # Apply the group change without logout
+    sudo chmod 666 /var/run/docker.sock
+    
     # Prepare the email argument
     EMAIL_ARG=""
     if [ -n "${CERTBOT_EMAIL}" ]; then
