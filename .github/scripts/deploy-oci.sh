@@ -103,21 +103,21 @@ aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
 AWSEOF
     chmod 600 ~/.aws/credentials
     
-    # Use official Certbot Docker image with Route53 plugin - explicitly with certonly command
-    CERTBOT_OPTS="certonly --authenticator dns-route53 --installer none -d api.artventuria.com --non-interactive --agree-tos"
-    
+    # Prepare the email argument
+    EMAIL_ARG=""
     if [ -n "${CERTBOT_EMAIL}" ]; then
-      CERTBOT_OPTS="$CERTBOT_OPTS -m ${CERTBOT_EMAIL}"
+      EMAIL_ARG="-m ${CERTBOT_EMAIL}"
     else
-      CERTBOT_OPTS="$CERTBOT_OPTS --register-unsafely-without-email"
+      EMAIL_ARG="--register-unsafely-without-email"
     fi
     
-    echo "Running certbot with options: $CERTBOT_OPTS"
+    echo "Running certbot for domain api.artventuria.com"
     sudo docker run --rm \
       -v "/etc/letsencrypt:/etc/letsencrypt" \
       -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
       -v "$HOME/.aws:/root/.aws:ro" \
-      certbot/dns-route53 $CERTBOT_OPTS
+      certbot/dns-route53 certonly --authenticator dns-route53 --installer none \
+      -d api.artventuria.com --non-interactive --agree-tos $EMAIL_ARG
     
     # Update to SSL configuration if certificates were created
     if [ -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
