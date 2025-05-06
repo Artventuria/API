@@ -20,10 +20,10 @@ sudo mkdir -p /etc/nginx/conf.d
 # Set the appropriate configuration based on SSL status
 if [ "${IS_SSL_ENABLED}" = true ] && [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
   echo "Using SSL configuration for Nginx."
-  sudo cp ~/${NGINX_SSL_CONF} /etc/nginx/conf.d/${DOMAIN}.conf
+  sudo cp ${NGINX_SSL_CONF} /etc/nginx/conf.d/${DOMAIN}.conf
 else
   echo "Using HTTP configuration for Nginx."
-  sudo cp ~/${NGINX_HTTP_CONF} /etc/nginx/conf.d/${DOMAIN}.conf
+  sudo cp ${NGINX_HTTP_CONF} /etc/nginx/conf.d/${DOMAIN}.conf
 fi
 
 # Restart Nginx to apply changes

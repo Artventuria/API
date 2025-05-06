@@ -73,7 +73,7 @@ configure_nginx_ssl() {
   sudo mkdir -p /etc/nginx/conf.d
   
   # Configure Nginx with SSL
-  sudo cp ~/${SSL_CONF} /etc/nginx/conf.d/${DOMAIN}.conf
+  sudo cp ${SSL_CONF} /etc/nginx/conf.d/${DOMAIN}.conf
   
   # Restart Nginx to apply changes
   sudo systemctl restart nginx
