@@ -78,8 +78,11 @@ EOL
   if [ ! -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
     # Install Certbot if needed
     if ! command -v certbot &> /dev/null; then
-      sudo dnf install -y epel-release
-      sudo dnf install -y certbot python3-certbot-nginx
+      # Oracle Linux needs specific repos for certbot
+      sudo dnf install -y oracle-epel-release-el8
+      sudo dnf install -y python3-pip
+      sudo pip3 install certbot certbot-nginx
+      sudo ln -sf /usr/local/bin/certbot /usr/bin/certbot
     fi
     
     # Request certificate
