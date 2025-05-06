@@ -24,43 +24,41 @@ echo "Starting complete SSL setup for ${DOMAIN}..."
 #################################################
 obtain_certificates() {
   # Check if certificates already exist
-  if [ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
-    echo "Obtaining SSL certificates for ${DOMAIN}..."
-    
-    # Prepare the email argument
-    EMAIL_ARG=""
-    if [ -n "${EMAIL_VAR}" ]; then
-      EMAIL_ARG="-m ${EMAIL_VAR}"
-    else
-      EMAIL_ARG="--register-unsafely-without-email"
-    fi
-    
-    # Run certbot with DNS validation (Route53)
-    sudo docker run --rm \
-      -v "/etc/letsencrypt:/etc/letsencrypt" \
-      -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
-      -e "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY}" \
-      -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY}" \
-      certbot/dns-route53 certonly --authenticator dns-route53 --installer none \
-      -d ${DOMAIN} --non-interactive --agree-tos ${EMAIL_ARG}
-    
-    if [ $? -ne 0 ]; then
-      echo "Failed to obtain SSL certificates."
-      return 1
-    fi
-    
-    # Verify certificates were created
-    if [ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
-      echo "SSL certificates not found after execution."
-      return 1
-    fi
-    
-    echo "SSL certificates obtained successfully."
-  else
+  if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
     echo "SSL certificates for ${DOMAIN} already exist."
+    return 0
+  fi
+
+  echo "Obtaining SSL certificates for ${DOMAIN}..."
+  
+  # Prepare the email argument
+  EMAIL_ARG=""
+  if [ -n "${EMAIL_VAR}" ]; then
+    EMAIL_ARG="-m ${EMAIL_VAR}"
+  else
+    EMAIL_ARG="--register-unsafely-without-email"
   fi
   
-  return 0
+  # Run certbot with DNS validation (Route53)
+  sudo docker run --rm \
+    -v "/etc/letsencrypt:/etc/letsencrypt" \
+    -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+    -e "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY}" \
+    -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY}" \
+    certbot/dns-route53 certonly --authenticator dns-route53 --installer none \
+    -d ${DOMAIN} --non-interactive --agree-tos ${EMAIL_ARG}
+  
+  # Even if certbot reports "Certificate not yet due for renewal",
+  # we consider this a success since it means certificates exist
+  
+  # Final verification that certificates exist
+  if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
+    echo "SSL certificates verified."
+    return 0
+  else
+    echo "SSL certificates not found after execution."
+    return 1
+  fi
 }
 
 #################################################
@@ -136,20 +134,14 @@ EOF
 # MAIN EXECUTION
 #################################################
 
-# Step 1: Obtain SSL certificates
+# Step 1: Attempt to obtain or verify SSL certificates
 obtain_certificates
-if [ $? -ne 0 ]; then
-  echo "Failed to obtain SSL certificates. Aborting SSL setup."
-  return 1
-fi
+CERT_RESULT=$?
 
-# Check if certificates exist now (either they existed before or were just created)
+# If certificates exist or were successfully obtained
 if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
   # Step 2: Configure Nginx to use SSL
   configure_nginx_ssl
-  if [ $? -ne 0 ]; then
-    echo "Warning: Failed to configure Nginx with SSL."
-  fi
   
   # Step 3: Configure SELinux
   configure_selinux
@@ -160,6 +152,7 @@ if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
   echo "Complete SSL setup finished successfully for ${DOMAIN}."
   return 0
 else
-  echo "SSL certificates were not found. Setup incomplete."
+  # Something went wrong - certificates weren't found
+  echo "SSL certificates were not found or could not be obtained. Setup incomplete."
   return 1
 fi
