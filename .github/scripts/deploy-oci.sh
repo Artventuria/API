@@ -94,15 +94,6 @@ EOL
       sudo systemctl start docker
     fi
     
-    # Create AWS credentials directory for Route53 access
-    mkdir -p ~/.aws
-    cat > ~/.aws/credentials << AWSEOF
-[default]
-aws_access_key_id = ${AWS_ACCESS_KEY_ID}
-aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
-AWSEOF
-    chmod 600 ~/.aws/credentials
-    
     # Prepare the email argument
     EMAIL_ARG=""
     if [ -n "${CERTBOT_EMAIL}" ]; then
@@ -115,7 +106,8 @@ AWSEOF
     sudo docker run --rm \
       -v "/etc/letsencrypt:/etc/letsencrypt" \
       -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
-      -v "$HOME/.aws:/root/.aws:ro" \
+      -e "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" \
+      -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" \
       certbot/dns-route53 certonly --authenticator dns-route53 --installer none \
       -d api.artventuria.com --non-interactive --agree-tos $EMAIL_ARG
     
