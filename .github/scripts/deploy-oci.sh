@@ -85,15 +85,16 @@ EOL
       sudo ln -sf /usr/local/bin/certbot /usr/bin/certbot
     fi
     
-    # Create virtual environment for Certbot and plugins
-    sudo dnf install -y python3-virtualenv
-    python3 -m virtualenv ~/certbot-venv
-    source ~/certbot-venv/bin/activate
+    # Install Docker if not already installed
+    if ! command -v docker &> /dev/null; then
+      echo "Installing Docker..."
+      sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+      sudo dnf install -y docker-ce docker-ce-cli containerd.io
+      sudo systemctl enable docker
+      sudo systemctl start docker
+    fi
     
-    # Install certbot and dns-route53 plugin in the virtual environment
-    pip install certbot certbot-dns-route53
-    
-    # Create AWS credentials file for Route53 access
+    # Create AWS credentials directory for Route53 access
     mkdir -p ~/.aws
     cat > ~/.aws/credentials << AWSEOF
 [default]
@@ -102,15 +103,21 @@ aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
 AWSEOF
     chmod 600 ~/.aws/credentials
     
-    # Run certbot with the virtual environment for DNS validation
+    # Use official Certbot Docker image with Route53 plugin
+    CERTBOT_OPTS="certonly --dns-route53 -d api.artventuria.com --non-interactive --agree-tos"
+    
     if [ -n "${CERTBOT_EMAIL}" ]; then
-      sudo ~/certbot-venv/bin/certbot certonly --dns-route53 -d api.artventuria.com --non-interactive --agree-tos -m "${CERTBOT_EMAIL}"
+      CERTBOT_OPTS="$CERTBOT_OPTS -m ${CERTBOT_EMAIL}"
     else
-      sudo ~/certbot-venv/bin/certbot certonly --dns-route53 -d api.artventuria.com --non-interactive --agree-tos --register-unsafely-without-email
+      CERTBOT_OPTS="$CERTBOT_OPTS --register-unsafely-without-email"
     fi
     
-    # Deactivate the virtual environment
-    deactivate
+    echo "Running certbot with options: $CERTBOT_OPTS"
+    sudo docker run --rm \
+      -v "/etc/letsencrypt:/etc/letsencrypt" \
+      -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+      -v "$HOME/.aws:/root/.aws:ro" \
+      certbot/dns-route53 $CERTBOT_OPTS
     
     # Update to SSL configuration if certificates were created
     if [ -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
