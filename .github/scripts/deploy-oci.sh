@@ -122,25 +122,26 @@ EOL
       # Setup automatic renewal with a cron job
       echo "Setting up automatic certificate renewal..."
       
-      # Create renewal script
-      cat > ~/certbot-renew.sh << 'RENEWSCRIPT'
+      # Create renewal script with exact AWS credentials 
+      cat > ~/certbot-renew.sh << EOF
 #!/bin/bash
 docker run --rm \
-  -v \"/etc/letsencrypt:/etc/letsencrypt\" \
-  -v \"/var/lib/letsencrypt:/var/lib/letsencrypt\" \
-  -e \"AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}\" \
-  -e \"AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}\" \
+  -v "/etc/letsencrypt:/etc/letsencrypt" \
+  -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+  -e "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" \
+  -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" \
   certbot/dns-route53 renew --non-interactive
-if [ $? -eq 0 ]; then
+if [ \$? -eq 0 ]; then
   # Only restart nginx if certificates were actually renewed
-  systemctl reload nginx
+  sudo systemctl reload nginx
 fi
-RENEWSCRIPT
+EOF
       
       chmod +x ~/certbot-renew.sh
       
-      # Add cron job to run weekly (Monday at 2:30 AM)
-      (crontab -l 2>/dev/null || echo "") | grep -v 'certbot-renew.sh' | { cat; echo "30 2 * * 1 /home/$USER/certbot-renew.sh >> /var/log/certbot-renewal.log 2>&1"; } | sudo crontab -
+      # Create a cron file directly in /etc/cron.d (same as manual setup)
+      echo "30 2 * * 1 /home/opc/certbot-renew.sh >> /var/log/certbot-renewal.log 2>&1" | sudo tee /etc/cron.d/certbot-renewal
+      sudo chmod 644 /etc/cron.d/certbot-renewal
       
       echo "Automatic renewal setup complete. Certificates will be checked weekly."
     fi
@@ -153,25 +154,26 @@ RENEWSCRIPT
     if [ ! -f ~/certbot-renew.sh ]; then
       echo "Setting up automatic certificate renewal..."
       
-      # Create renewal script
-      cat > ~/certbot-renew.sh << 'RENEWSCRIPT'
+      # Create renewal script with exact AWS credentials 
+      cat > ~/certbot-renew.sh << EOF
 #!/bin/bash
 docker run --rm \
-  -v \"/etc/letsencrypt:/etc/letsencrypt\" \
-  -v \"/var/lib/letsencrypt:/var/lib/letsencrypt\" \
-  -e \"AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}\" \
-  -e \"AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}\" \
+  -v "/etc/letsencrypt:/etc/letsencrypt" \
+  -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+  -e "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" \
+  -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" \
   certbot/dns-route53 renew --non-interactive
-if [ $? -eq 0 ]; then
+if [ \$? -eq 0 ]; then
   # Only restart nginx if certificates were actually renewed
-  systemctl reload nginx
+  sudo systemctl reload nginx
 fi
-RENEWSCRIPT
+EOF
       
       chmod +x ~/certbot-renew.sh
       
-      # Add cron job to run weekly (Monday at 2:30 AM)
-      (crontab -l 2>/dev/null || echo "") | grep -v 'certbot-renew.sh' | { cat; echo "30 2 * * 1 /home/$USER/certbot-renew.sh >> /var/log/certbot-renewal.log 2>&1"; } | sudo crontab -
+      # Create a cron file directly in /etc/cron.d (same as manual setup)
+      echo "30 2 * * 1 /home/opc/certbot-renew.sh >> /var/log/certbot-renewal.log 2>&1" | sudo tee /etc/cron.d/certbot-renewal
+      sudo chmod 644 /etc/cron.d/certbot-renewal
       
       echo "Automatic renewal setup complete. Certificates will be checked weekly."
     fi
