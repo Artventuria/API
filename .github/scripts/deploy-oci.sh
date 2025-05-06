@@ -85,11 +85,13 @@ EOL
       sudo ln -sf /usr/local/bin/certbot /usr/bin/certbot
     fi
     
-    # Update urllib3 to avoid SSL verification issues
-    sudo pip3 install --upgrade urllib3
+    # Create virtual environment for Certbot and plugins
+    sudo dnf install -y python3-virtualenv
+    python3 -m virtualenv ~/certbot-venv
+    source ~/certbot-venv/bin/activate
     
-    # Install the certbot-dns-route53 plugin
-    sudo pip3 install certbot-dns-route53
+    # Install certbot and dns-route53 plugin in the virtual environment
+    pip install certbot certbot-dns-route53
     
     # Create AWS credentials file for Route53 access
     mkdir -p ~/.aws
@@ -100,12 +102,15 @@ aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
 AWSEOF
     chmod 600 ~/.aws/credentials
     
-    # Request certificate using DNS validation
+    # Run certbot with the virtual environment for DNS validation
     if [ -n "${CERTBOT_EMAIL}" ]; then
-      sudo certbot certonly --dns-route53 -d api.artventuria.com --non-interactive --agree-tos -m "${CERTBOT_EMAIL}"
+      ~/certbot-venv/bin/certbot certonly --dns-route53 -d api.artventuria.com --non-interactive --agree-tos -m "${CERTBOT_EMAIL}"
     else
-      sudo certbot certonly --dns-route53 -d api.artventuria.com --non-interactive --agree-tos --register-unsafely-without-email
+      ~/certbot-venv/bin/certbot certonly --dns-route53 -d api.artventuria.com --non-interactive --agree-tos --register-unsafely-without-email
     fi
+    
+    # Deactivate the virtual environment
+    deactivate
     
     # Update to SSL configuration if certificates were created
     if [ -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
