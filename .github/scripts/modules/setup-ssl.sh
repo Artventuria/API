@@ -23,8 +23,8 @@ echo "Starting complete SSL setup for ${DOMAIN}..."
 # PART 1: OBTAIN SSL CERTIFICATES
 #################################################
 obtain_certificates() {
-  # Check if certificates already exist
-  if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
+  # Check if certificates already exist - using sudo to handle permissions
+  if sudo [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
     echo "SSL certificates for ${DOMAIN} already exist."
     return 0
   fi
@@ -40,19 +40,28 @@ obtain_certificates() {
   fi
   
   # Run certbot with DNS validation (Route53)
-  sudo docker run --rm \
-    -v "/etc/letsencrypt:/etc/letsencrypt" \
-    -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
-    -e "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY}" \
-    -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY}" \
+  echo "Running Docker-based certbot with Route53 DNS validation..."
+  DOCKER_CMD="sudo docker run --rm \
+    -v \"/etc/letsencrypt:/etc/letsencrypt\" \
+    -v \"/var/lib/letsencrypt:/var/lib/letsencrypt\" \
+    -e \"AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY}\" \
+    -e \"AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY}\" \
     certbot/dns-route53 certonly --authenticator dns-route53 --installer none \
-    -d ${DOMAIN} --non-interactive --agree-tos ${EMAIL_ARG}
+    -d ${DOMAIN} --non-interactive --agree-tos ${EMAIL_ARG}"
+  
+  echo "Executing: $DOCKER_CMD"
+  eval $DOCKER_CMD
+  CERT_STATUS=$?
+  
+  if [ $CERT_STATUS -ne 0 ]; then
+    echo "Warning: Certbot command exited with status $CERT_STATUS - this might be OK if certificates already exist."
+  fi
   
   # Even if certbot reports "Certificate not yet due for renewal",
   # we consider this a success since it means certificates exist
   
-  # Final verification that certificates exist
-  if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
+  # Final verification that certificates exist - using sudo for permission issues
+  if sudo [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
     echo "SSL certificates verified."
     return 0
   else
@@ -138,8 +147,8 @@ EOF
 obtain_certificates
 CERT_RESULT=$?
 
-# If certificates exist or were successfully obtained
-if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
+# If certificates exist or were successfully obtained - using sudo to check
+if sudo [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
   # Step 2: Configure Nginx to use SSL
   configure_nginx_ssl
   
