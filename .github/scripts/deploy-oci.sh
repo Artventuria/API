@@ -104,9 +104,9 @@ AWSEOF
     
     # Run certbot with the virtual environment for DNS validation
     if [ -n "${CERTBOT_EMAIL}" ]; then
-      ~/certbot-venv/bin/certbot certonly --dns-route53 -d api.artventuria.com --non-interactive --agree-tos -m "${CERTBOT_EMAIL}"
+      sudo ~/certbot-venv/bin/certbot certonly --dns-route53 -d api.artventuria.com --non-interactive --agree-tos -m "${CERTBOT_EMAIL}"
     else
-      ~/certbot-venv/bin/certbot certonly --dns-route53 -d api.artventuria.com --non-interactive --agree-tos --register-unsafely-without-email
+      sudo ~/certbot-venv/bin/certbot certonly --dns-route53 -d api.artventuria.com --non-interactive --agree-tos --register-unsafely-without-email
     fi
     
     # Deactivate the virtual environment
