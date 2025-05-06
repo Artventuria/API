@@ -85,18 +85,24 @@ EOL
       sudo ln -sf /usr/local/bin/certbot /usr/bin/certbot
     fi
     
-    # Temporarily stop nginx to free port 80 for certbot standalone
-    sudo systemctl stop nginx
+    # Install the certbot-dns-route53 plugin
+    sudo pip3 install certbot-dns-route53
     
-    # Request certificate in standalone mode
+    # Create AWS credentials file for Route53 access
+    mkdir -p ~/.aws
+    cat > ~/.aws/credentials << AWSEOF
+[default]
+aws_access_key_id = ${AWS_ACCESS_KEY_ID}
+aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+AWSEOF
+    chmod 600 ~/.aws/credentials
+    
+    # Request certificate using DNS validation
     if [ -n "${CERTBOT_EMAIL}" ]; then
-      sudo certbot certonly --standalone -d api.artventuria.com --non-interactive --agree-tos -m "${CERTBOT_EMAIL}"
+      sudo certbot certonly --dns-route53 -d api.artventuria.com --non-interactive --agree-tos -m "${CERTBOT_EMAIL}"
     else
-      sudo certbot certonly --standalone -d api.artventuria.com --non-interactive --agree-tos --register-unsafely-without-email
+      sudo certbot certonly --dns-route53 -d api.artventuria.com --non-interactive --agree-tos --register-unsafely-without-email
     fi
-    
-    # Restart nginx after certbot is done
-    sudo systemctl start nginx
     
     # Update to SSL configuration if certificates were created
     if [ -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
