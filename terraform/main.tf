@@ -1,47 +1,9 @@
-resource "aws_security_group" "artventuria-sg" {
-  name = "artventuria-sg"
 
-  ingress {
-    description = "Allow SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "Allow HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "Allow HTTPS"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-resource "aws_instance" "web_server" {
-  ami             = "ami-04a790ca5ad2f097c"  # AMI Amazon Linux 2 AMI (HVM) - Kernel 5.10, SSD Volume Type
-  instance_type   = var.instance_type
-  key_name        = var.key_name
-  security_groups = [aws_security_group.artventuria-sg.name]
-
-  tags = {
-    Name = "Artventuria-API-Server"
-  }
+# Variable for storing the Oracle Cloud instance IP
+variable "oracle_instance_ip" {
+  description = "Oracle Cloud instance IP"
+  type        = string
+  default     = "89.168.44.86"
 }
 
 # Configuration SES
@@ -148,13 +110,13 @@ resource "aws_acm_certificate_validation" "api_cert" {
   validation_record_fqdns = [for record in aws_route53_record.api_cert_validation : record.fqdn]
 }
 
-# Enregistrement A pour l'API
+# Record A for API (to Oracle Cloud)
 resource "aws_route53_record" "api" {
   zone_id = aws_route53_zone.primary.zone_id
   name    = "api.${var.ses_domain_name}"
   type    = "A"
   ttl     = "300"
-  records = [aws_instance.web_server.public_ip]
+  records = [var.oracle_instance_ip]
 }
 
 # Configuration des enregistrements DKIM pour SES
@@ -167,7 +129,7 @@ resource "aws_route53_record" "dkim" {
   records = ["${element(aws_ses_domain_dkim.artventuria.dkim_tokens, count.index)}.dkim.amazonses.com"]
 }
 
-# Enregistrement de vérification SES
+# Record for SES verification
 resource "aws_route53_record" "ses_verification" {
   zone_id = aws_route53_zone.primary.zone_id
   name    = "_amazonses.${var.ses_domain_name}"
@@ -176,7 +138,7 @@ resource "aws_route53_record" "ses_verification" {
   records = [aws_ses_domain_identity.artventuria.verification_token]
 }
 
-# Enregistrement MX pour Gmail
+# Record MX for Gmail
 resource "aws_route53_record" "mx" {
   zone_id = aws_route53_zone.primary.zone_id
   name    = var.ses_domain_name
@@ -191,7 +153,7 @@ resource "aws_route53_record" "mx" {
   ]
 }
 
-# Enregistrement MX pour le custom MAIL FROM domain
+# Record MX for custom MAIL FROM domain
 resource "aws_route53_record" "mail_from_mx" {
   zone_id = aws_route53_zone.primary.zone_id
   name    = "mail.${var.ses_domain_name}"
@@ -200,7 +162,7 @@ resource "aws_route53_record" "mail_from_mx" {
   records = ["10 feedback-smtp.${var.region}.amazonses.com"]
 }
 
-# Enregistrement SPF pour Gmail et SES
+# Record SPF for Gmail and SES
 resource "aws_route53_record" "spf" {
   zone_id = aws_route53_zone.primary.zone_id
   name    = var.ses_domain_name
@@ -209,7 +171,7 @@ resource "aws_route53_record" "spf" {
   records = ["v=spf1 include:_spf.google.com include:amazonses.com ~all"]
 }
 
-# Enregistrement DMARC
+# Record DMARC
 resource "aws_route53_record" "dmarc" {
   zone_id = aws_route53_zone.primary.zone_id
   name    = "_dmarc.${var.ses_domain_name}"
@@ -218,20 +180,20 @@ resource "aws_route53_record" "dmarc" {
   records = ["v=DMARC1; p=none;"]
 }
 
-# Enregistrement A pour le serveur web
+# Record A for web server (pointing to Oracle Cloud)
 resource "aws_route53_record" "www" {
   zone_id = aws_route53_zone.primary.zone_id
   name    = "www.${var.ses_domain_name}"
   type    = "A"
   ttl     = "300"
-  records = [aws_instance.web_server.public_ip]
+  records = [var.oracle_instance_ip]
 }
 
-# Enregistrement A pour le domaine racine
+# Record A for root domain (pointing to Oracle Cloud)
 resource "aws_route53_record" "root" {
   zone_id = aws_route53_zone.primary.zone_id
   name    = var.ses_domain_name
   type    = "A"
   ttl     = "300"
-  records = [aws_instance.web_server.public_ip]
+  records = [var.oracle_instance_ip]
 }
