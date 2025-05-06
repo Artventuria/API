@@ -43,12 +43,22 @@ jobs:
       - name: Configure SSH and Enable ControlMaster
         run: |
           mkdir -p ~/.ssh  # Create the SSH directory if it doesn't exist
-          echo "${{ secrets.SERVER_SSH_KEY }}" | base64 -d > ~/.ssh/artventuria-key  # Decode and save the SSH private key
-          chmod 600 ~/.ssh/artventuria-key  # Set proper permissions for the SSH key
+          # Create a script to handle passphrase
+          cat > ~/.ssh/key_script.sh << 'EOF'
+          #!/bin/bash
+          echo "${{ secrets.SERVER_SSH_PASSPHRASE }}"
+          EOF
+          chmod 700 ~/.ssh/key_script.sh
+          
+          # Decode and save the private key
+          echo "${{ secrets.SERVER_SSH_KEY }}" | base64 -d > ~/.ssh/artventuria-key
+          chmod 600 ~/.ssh/artventuria-key
+          
           # Configuration for Oracle Cloud
-          echo -e "Host oci\n  HostName ${{ secrets.SERVER_HOST }}\n  User opc\n  IdentityFile ~/.ssh/artventuria-key\n  StrictHostKeyChecking no\n  ControlMaster auto\n  ControlPath ~/.ssh/cm_socket_%r@%h:%p\n  ControlPersist 10m" > ~/.ssh/config  # Configure SSH for ControlMaster to reuse connections
+          echo -e "Host oci\n  HostName ${{ secrets.SERVER_HOST }}\n  User ${{ secrets.SERVER_USER }}\n  IdentityFile ~/.ssh/artventuria-key\n  StrictHostKeyChecking no\n  ControlMaster auto\n  ControlPath ~/.ssh/cm_socket_%r@%h:%p\n  ControlPersist 10m\n  PreferredAuthentications publickey" > ~/.ssh/config
 
-
+          # Test the connection
+          SSH_ASKPASS=~/.ssh/key_script.sh setsid -w ssh -o StrictHostKeyChecking=no oci 'echo "SSH connection successful"' || echo "SSH connection failed"
 
       - name: Make deploy script executable
         run: chmod +x .github/scripts/deploy-oci.sh
