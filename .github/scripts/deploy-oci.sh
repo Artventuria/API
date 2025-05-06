@@ -94,9 +94,7 @@ EOL
       sudo systemctl start docker
     fi
     
-    # Ensure current user is in docker group
-    sudo usermod -aG docker $USER
-    # Apply the group change without logout
+    # Permissions for Docker socket - use a more direct approach
     sudo chmod 666 /var/run/docker.sock
     
     # Prepare the email argument
@@ -120,11 +118,63 @@ EOL
     if [ -f "/etc/letsencrypt/live/api.artventuria.com/fullchain.pem" ]; then
       sudo cp ~/artventuria-deploy/nginx-ssl.conf /etc/nginx/conf.d/api.artventuria.com.conf
       sudo systemctl restart nginx
+      
+      # Setup automatic renewal with a cron job
+      echo "Setting up automatic certificate renewal..."
+      
+      # Create renewal script
+      cat > ~/certbot-renew.sh << 'RENEWSCRIPT'
+#!/bin/bash
+docker run --rm \
+  -v \"/etc/letsencrypt:/etc/letsencrypt\" \
+  -v \"/var/lib/letsencrypt:/var/lib/letsencrypt\" \
+  -e \"AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}\" \
+  -e \"AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}\" \
+  certbot/dns-route53 renew --non-interactive
+if [ $? -eq 0 ]; then
+  # Only restart nginx if certificates were actually renewed
+  systemctl reload nginx
+fi
+RENEWSCRIPT
+      
+      chmod +x ~/certbot-renew.sh
+      
+      # Add cron job to run weekly (Monday at 2:30 AM)
+      (crontab -l 2>/dev/null || echo "") | grep -v 'certbot-renew.sh' | { cat; echo "30 2 * * 1 /home/$USER/certbot-renew.sh >> /var/log/certbot-renewal.log 2>&1"; } | sudo crontab -
+      
+      echo "Automatic renewal setup complete. Certificates will be checked weekly."
     fi
   else
     # Certificates already exist, use SSL config
     sudo cp ~/artventuria-deploy/nginx-ssl.conf /etc/nginx/conf.d/api.artventuria.com.conf
     sudo systemctl restart nginx
+    
+    # Ensure renewal is still set up even if certificates already exist
+    if [ ! -f ~/certbot-renew.sh ]; then
+      echo "Setting up automatic certificate renewal..."
+      
+      # Create renewal script
+      cat > ~/certbot-renew.sh << 'RENEWSCRIPT'
+#!/bin/bash
+docker run --rm \
+  -v \"/etc/letsencrypt:/etc/letsencrypt\" \
+  -v \"/var/lib/letsencrypt:/var/lib/letsencrypt\" \
+  -e \"AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}\" \
+  -e \"AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}\" \
+  certbot/dns-route53 renew --non-interactive
+if [ $? -eq 0 ]; then
+  # Only restart nginx if certificates were actually renewed
+  systemctl reload nginx
+fi
+RENEWSCRIPT
+      
+      chmod +x ~/certbot-renew.sh
+      
+      # Add cron job to run weekly (Monday at 2:30 AM)
+      (crontab -l 2>/dev/null || echo "") | grep -v 'certbot-renew.sh' | { cat; echo "30 2 * * 1 /home/$USER/certbot-renew.sh >> /var/log/certbot-renewal.log 2>&1"; } | sudo crontab -
+      
+      echo "Automatic renewal setup complete. Certificates will be checked weekly."
+    fi
   fi
 
   # Log into Docker Hub
