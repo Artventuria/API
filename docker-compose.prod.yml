@@ -73,6 +73,8 @@ services:
       - postgres
       - kafka
       - mongodb
+    volumes:
+      - /var/log/artventuria:/app/logs
     environment:
       # Database configuration
       database.host: postgres
