@@ -86,6 +86,13 @@ EOL
   source modules/setup-ssl.sh "${DOMAIN}" "$CERTBOT_EMAIL" "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" "nginx-http.conf" "nginx-ssl.conf"
   
   #################################################
+  # SUBSECTION: LOGS DIRECTORY SETUP
+  #################################################
+  echo "Creating directory for application logs..."
+  sudo mkdir -p /var/log/artventuria
+  sudo chmod 777 /var/log/artventuria
+  
+  #################################################
   # SUBSECTION: DOCKER DEPLOYMENT
   #################################################
   echo "Deploying Docker containers..."
