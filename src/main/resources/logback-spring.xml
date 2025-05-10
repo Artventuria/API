@@ -29,8 +29,8 @@
         <appender-ref ref="Console" />
     </root>
 
-    <!-- LOG "com.artventuria.api*" at DEBUG level -->
-    <logger name="com.artventuria.api" level="debug" additivity="false">
+    <!-- LOG "com.artventuria.api*" at INFO level -->
+    <logger name="com.artventuria.api" level="info" additivity="false">
         <appender-ref ref="RollingFile" />
         <appender-ref ref="Console" />
     </logger>
