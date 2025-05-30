@@ -98,6 +98,15 @@ frontend:
   max-age: 86400
   compress: true
 
+# API Configuration
+api:
+  url: ${API_URL}
+
+# Mobile Configuration
+mobile:
+  deeplink:
+    reset-password: ${MOBILE_DEEPLINK_RESET_PASSWORD}
+
 # Swagger/OpenAPI Configuration
 springdoc:
   api-docs:

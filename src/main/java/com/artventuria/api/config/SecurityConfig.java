@@ -17,36 +17,41 @@ import com.artventuria.api.security.JwtAuthenticationFilter;
 @EnableWebSecurity
 public class SecurityConfig {
 
+        @Bean
+        public SecurityFilterChain securityFilterChain(final HttpSecurity http,
+                        final JwtAuthenticationFilter jwtAuthFilter,
+                        final com.artventuria.api.security.AdminAuthenticationFilter adminAuthFilter) throws Exception {
+                http
+                                .csrf(csrf -> csrf.disable())
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/reset-password",
+                                                                "/api/auth/reset-password/verify", "/api/auth/forgot-password", "/api/auth/reset-redirect",
+                                                                "/actuator/health", "/api/version")
+                                                .permitAll()
+                                                .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/api-docs/**",
+                                                                "/v3/api-docs/**")
+                                                .permitAll()
+                                                .requestMatchers("/api/admin/**").hasRole("ADMIN") // Restrict admin
+                                                                                                   // routes to users
+                                                                                                   // with
+                                                                                                   // ROLE_ADMIN
+                                                .anyRequest().authenticated())
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                                .addFilterAfter(adminAuthFilter, JwtAuthenticationFilter.class);
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(final HttpSecurity http, final JwtAuthenticationFilter jwtAuthFilter,
-            final com.artventuria.api.security.AdminAuthenticationFilter adminAuthFilter) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/reset-password",
-                                "/api/auth/forgot-password", "/actuator/health", "/api/version")
-                        .permitAll()
-                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**")
-                        .permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // Restrict admin routes to users with
-                                                                           // ROLE_ADMIN
-                        .anyRequest().authenticated())
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(adminAuthFilter, JwtAuthenticationFilter.class);
+                return http.build();
+        }
 
-        return http.build();
-    }
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(final AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
-    }
+        @Bean
+        public AuthenticationManager authenticationManager(
+                        final AuthenticationConfiguration authenticationConfiguration) throws Exception {
+                return authenticationConfiguration.getAuthenticationManager();
+        }
 }

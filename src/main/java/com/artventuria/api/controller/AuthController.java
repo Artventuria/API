@@ -1,8 +1,11 @@
 package com.artventuria.api.controller;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 import com.artventuria.api.service.auth.AuthService;
 import com.artventuria.api.service.auth.IPasswordResetService;
@@ -14,10 +17,13 @@ public class AuthController {
 
     private final AuthService authService;
     private final IPasswordResetService passwordResetService;
+    private final String mobileDeeplink;
 
-    public AuthController(AuthService authService, IPasswordResetService passwordResetService) {
+    public AuthController(AuthService authService, IPasswordResetService passwordResetService,
+            @Value("${mobile.deeplink.reset-password}") String mobileDeeplink) {
         this.authService = authService;
         this.passwordResetService = passwordResetService;
+        this.mobileDeeplink = mobileDeeplink;
     }
 
     @PostMapping("/login")
@@ -69,6 +75,29 @@ public class AuthController {
             @Valid @RequestBody PasswordResetConfirmRequest request) {
         passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Endpoint to redirect to mobile app with reset token using deeplink.
+     * Verifies if the token is valid before redirecting to the mobile app.
+     * 
+     * @param token    The reset token
+     * @param response The HTTP response
+     * @return A redirection to the mobile app
+     * @throws IOException In case of error during redirection
+     */
+    @GetMapping("/reset-redirect")
+    public void resetRedirect(@RequestParam String token, HttpServletResponse response) throws IOException {
+        try {
+            // Verify if the token exists and is valid to prevent abuse
+            passwordResetService.verifyPasswordResetToken(token);
+
+            // If the token is valid, redirect to the mobile app
+            response.sendRedirect(mobileDeeplink + "?token=" + token);
+        } catch (Exception e) {
+            // In case of invalid or expired token, redirect to an error page
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid or expired token");
+        }
     }
 }
 
