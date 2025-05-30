@@ -28,7 +28,8 @@ public class EmailServiceImpl implements EmailService {
         public EmailServiceImpl(
                         @Value("${aws.ses.region:eu-west-3}") String awsRegion,
                         @Value("${aws.ses.from-email}") String fromEmail,
-                        @Value("${frontend.url}") String frontendUrl,
+                        @Value("${api.url}") String apiUrl,
+                        @Value("${mobile.deeplink.reset-password}") String mobileDeeplink,
                         MessageSource messageSource,
                         TemplateEngine templateEngine) {
                 this.sesClient = SesClient.builder()
@@ -36,7 +37,8 @@ public class EmailServiceImpl implements EmailService {
                                 .build();
                 this.fromEmail = fromEmail;
                 this.messageSource = messageSource;
-                this.emailTemplateBuilder = new EmailTemplateBuilder(templateEngine, messageSource, frontendUrl);
+                this.emailTemplateBuilder = new EmailTemplateBuilder(templateEngine, messageSource, apiUrl,
+                                mobileDeeplink);
         }
 
         @Override
