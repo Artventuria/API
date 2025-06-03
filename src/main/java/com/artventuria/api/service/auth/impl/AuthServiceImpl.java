@@ -62,8 +62,7 @@ public class AuthServiceImpl implements AuthService {
 
         TokensResponse tokens = new TokensResponse(accessToken, refreshToken);
         ExtendedUserResponse userResponse = new ExtendedUserResponse(user.getId(), user.getUsername(), user.getEmail(),
-                user.getPoints(),
-                user.getLastLogin(), user.getCreatedAt(), user.getUpdatedAt());
+                user.getPoints(), user.getLastLogin(), user.getCreatedAt(), user.getUpdatedAt(), 0, 0);
         return new AuthResponse(tokens, userResponse);
     }
 
@@ -117,8 +116,7 @@ public class AuthServiceImpl implements AuthService {
 
         TokensResponse tokens = new TokensResponse(accessToken, refreshToken);
         ExtendedUserResponse userResponse = new ExtendedUserResponse(user.getId(), user.getUsername(), user.getEmail(),
-                user.getPoints(),
-                user.getLastLogin(), user.getCreatedAt(), user.getUpdatedAt());
+                user.getPoints(), user.getLastLogin(), user.getCreatedAt(), user.getUpdatedAt(), 0, 0);
         return new AuthResponse(tokens, userResponse);
     }
 

@@ -6,18 +6,23 @@ public class ExtendedUserResponse extends UserResponse {
     private Instant lastLogin;
     private Instant createdAt;
     private Instant updatedAt;
+    private Integer badgeCount;
+    private Integer artworkCount;
 
     public ExtendedUserResponse() {
         super();
     }
 
     public ExtendedUserResponse(Integer id, String username, String email, Integer points,
-            Instant lastLogin, Instant createdAt, Instant updatedAt) {
+            Instant lastLogin, Instant createdAt, Instant updatedAt, Integer badgeCount, Integer artworkCount) {
         super(id, username, email, points);
         this.lastLogin = lastLogin;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.badgeCount = badgeCount;
+        this.artworkCount = artworkCount;
     }
+
 
     public Instant getLastLogin() {
         return lastLogin;
@@ -41,5 +46,21 @@ public class ExtendedUserResponse extends UserResponse {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Integer getBadgeCount() {
+        return badgeCount;
+    }
+
+    public void setBadgeCount(Integer badgeCount) {
+        this.badgeCount = badgeCount;
+    }
+
+    public Integer getArtworkCount() {
+        return artworkCount;
+    }
+
+    public void setArtworkCount(Integer artworkCount) {
+        this.artworkCount = artworkCount;
     }
 }
