@@ -18,6 +18,7 @@ public class ArtworkMetadataDTO {
     private DimensionsDTO dimensions;
     private List<String> tags;
     private List<String> external_links;
+    private String image_url;
     private boolean temporary_exhibition;
     private Object additional_details;
     private Instant created_at;

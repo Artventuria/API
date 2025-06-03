@@ -37,6 +37,9 @@ public class ArtworkMetadata {
 
     @Field("external_links")
     private List<String> externalLinks;
+    
+    @Field("image_url")
+    private String imageUrl;
 
     @Field("temporary_exhibition")
     private boolean temporaryExhibition;
@@ -185,5 +188,13 @@ public class ArtworkMetadata {
 
     public void setAdditionalDetails(Object additionalDetails) {
         this.additionalDetails = additionalDetails;
+    }
+    
+    public String getImageUrl() {
+        return imageUrl;
+    }
+    
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

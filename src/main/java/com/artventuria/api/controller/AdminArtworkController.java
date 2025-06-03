@@ -52,6 +52,7 @@ public class AdminArtworkController {
             metadata.setMaterials(artworkDTO.getMetadata().getMaterials());
             metadata.setTags(artworkDTO.getMetadata().getTags());
             metadata.setExternalLinks(artworkDTO.getMetadata().getExternal_links());
+            metadata.setImageUrl(artworkDTO.getMetadata().getImage_url());
             metadata.setAdditionalDetails(artworkDTO.getMetadata().getAdditional_details());
 
             if (artworkDTO.getMetadata().getDimensions() != null) {
@@ -91,6 +92,7 @@ public class AdminArtworkController {
             metadata.setMaterials(artworkDTO.getMetadata().getMaterials());
             metadata.setTags(artworkDTO.getMetadata().getTags());
             metadata.setExternalLinks(artworkDTO.getMetadata().getExternal_links());
+            metadata.setImageUrl(artworkDTO.getMetadata().getImage_url());
             metadata.setAdditionalDetails(artworkDTO.getMetadata().getAdditional_details());
             metadata.setTemporaryExhibition(artworkDTO.getMetadata().isTemporary_exhibition());
 
@@ -168,6 +170,9 @@ public class AdminArtworkController {
             }
             if (metadataDTO.getExternal_links() != null) {
                 metadata.setExternalLinks(metadataDTO.getExternal_links());
+            }
+            if (metadataDTO.getImage_url() != null) {
+                metadata.setImageUrl(metadataDTO.getImage_url());
             }
             if (metadataDTO.getAdditional_details() != null) {
                 metadata.setAdditionalDetails(metadataDTO.getAdditional_details());
