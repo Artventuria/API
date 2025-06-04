@@ -1,8 +1,13 @@
 package com.artventuria.api.service.artwork.impl;
 
+import com.artventuria.api.domain.mongodb.ScanLog;
 import com.artventuria.api.domain.postgresql.Artwork;
+import com.artventuria.api.dto.artwork.ArtworkDTO;
+import com.artventuria.api.dto.artwork.StillToCollectResponse;
 import com.artventuria.api.exception.ResourceNotFoundException;
+import com.artventuria.api.mapper.ArtworkMapper;
 import com.artventuria.api.repository.jpa.artwork.ArtworkRepository;
+import com.artventuria.api.repository.mongo.ScanLogRepository;
 import com.artventuria.api.service.artwork.ArtworkService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,17 +15,28 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class ArtworkServiceImpl implements ArtworkService {
 
     private final ArtworkRepository artworkRepository;
+    private final ScanLogRepository scanLogRepository;
+    private final ArtworkMapper artworkMapper;
 
     @Autowired
-    public ArtworkServiceImpl(ArtworkRepository artworkRepository) {
+    public ArtworkServiceImpl(
+            ArtworkRepository artworkRepository,
+            ScanLogRepository scanLogRepository,
+            ArtworkMapper artworkMapper) {
         this.artworkRepository = artworkRepository;
+        this.scanLogRepository = scanLogRepository;
+        this.artworkMapper = artworkMapper;
     }
 
     @Override
@@ -71,11 +87,11 @@ public class ArtworkServiceImpl implements ArtworkService {
     public void deleteArtwork(Integer artworkId) {
         artworkRepository.deleteById(artworkId);
     }
-    
+
     @Override
     public void patchArtwork(Integer artworkId, Artwork partialArtwork) {
         Artwork existingArtwork = getArtworkById(artworkId);
-        
+
         // Only update fields that are not null in the partial artwork
         if (partialArtwork.getTitle() != null) {
             existingArtwork.setTitle(partialArtwork.getTitle());
@@ -104,7 +120,7 @@ public class ArtworkServiceImpl implements ArtworkService {
         if (partialArtwork.getNfcTagId() != null) {
             existingArtwork.setNfcTagId(partialArtwork.getNfcTagId());
         }
-        
+
         // Update transient fields for metadata if provided
         if (partialArtwork.getDescriptionExtended() != null) {
             existingArtwork.setDescriptionExtended(partialArtwork.getDescriptionExtended());
@@ -121,7 +137,77 @@ public class ArtworkServiceImpl implements ArtworkService {
         if (partialArtwork.getTags() != null) {
             existingArtwork.setTags(partialArtwork.getTags());
         }
-        
+
         artworkRepository.save(existingArtwork);
+    }
+
+    @Override
+    public List<StillToCollectResponse> getStillToCollectArtworks(Integer userId, int limit, String cursor) {
+        // Decode cursor if it exists
+        Integer lastId = null;
+        if (cursor != null && !cursor.isEmpty()) {
+            try {
+                String decodedCursor = new String(Base64.getDecoder().decode(cursor));
+                lastId = Integer.parseInt(decodedCursor);
+            } catch (Exception e) {
+                // Ignore cursor on decode error
+                lastId = null;
+            }
+        }
+
+        // Get IDs of artworks already scanned by the user
+        List<ScanLog> scannedLogs = scanLogRepository.findValidArtworkScansByUserId(userId.longValue());
+        List<Long> scannedArtworkIds = scannedLogs.stream()
+                .map(ScanLog::getArtworkId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // Check if user has already scanned all artworks
+        Long totalArtworks = artworkRepository.count();
+        if (scannedArtworkIds.size() >= totalArtworks) {
+            // User has scanned all artworks
+            return Collections.emptyList();
+        }
+
+        // Get random artworks not scanned by the user
+        List<Artwork> artworks = artworkRepository.findRandomArtworksNotScannedByUser(
+                scannedArtworkIds,
+                scannedArtworkIds.isEmpty(),
+                lastId,
+                limit);
+
+        if (artworks.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Prepare cursor for next page
+        Integer nextLastId = artworks.stream()
+                .map(Artwork::getId)
+                .max(Integer::compare)
+                .orElse(null);
+
+        String nextPageCursor = null;
+        if (nextLastId != null) {
+            nextPageCursor = Base64.getEncoder().encodeToString(nextLastId.toString().getBytes());
+        }
+
+        // Convert artworks to complete responses with all metadata
+        List<StillToCollectResponse> responses = new ArrayList<>();
+        for (Artwork artwork : artworks) {
+            // Use mapper to create a complete DTO with all metadata
+            ArtworkDTO artworkDTO = artworkMapper.toDto(artwork);
+
+            // Create response by copying all properties from DTO and adding cursor
+            StillToCollectResponse response = new StillToCollectResponse(artworkDTO);
+
+            // Add cursor only to the last response
+            if (artwork.getId().equals(nextLastId)) {
+                response.setNextPageCursor(nextPageCursor);
+            }
+
+            responses.add(response);
+        }
+
+        return responses;
     }
 }
