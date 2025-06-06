@@ -96,7 +96,6 @@ public class NFCScanServiceImpl implements NFCScanService {
         // Create the base response (which will be returned even if userId is not
         // provided)
         NFCScanResponse response = new NFCScanResponse();
-        response.setStatus("Success");
         response.setLocation(request.getLocation());
         response.setDeviceId(request.getDeviceId());
         response.setToken(tag.getToken());
@@ -112,6 +111,7 @@ public class NFCScanServiceImpl implements NFCScanService {
         // If no user ID is provided, it's just a validation scan without connection
         // Return the base info
         if (request.getUserId() == null) {
+            response.setStatus("Success");
             return response;
         }
 
@@ -129,6 +129,7 @@ public class NFCScanServiceImpl implements NFCScanService {
             List<Collection> userCollections = collectionRepository.findByUserId(request.getUserId().intValue());
             if (userCollections.isEmpty()) {
                 System.out.println("No collection found for user ID: " + request.getUserId());
+                response.setStatus("Success");
                 return response;
             }
 
@@ -166,12 +167,18 @@ public class NFCScanServiceImpl implements NFCScanService {
                             e.printStackTrace();
                         }
                     }
+                    response.setStatus("Success");
                 } catch (Exception e) {
                     System.err.println("Error adding artwork to collection: " + e.getMessage());
                     e.printStackTrace();
+                    response.setStatus("Error");
                 }
+            } else {
+                // The artwork is already in the user's collection
+                response.setStatus("AlreadyCollected");
             }
-
+        } else {
+            // No artwork associated with the NFC tag
             response.setStatus("Success");
         }
 

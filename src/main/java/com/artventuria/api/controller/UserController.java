@@ -94,7 +94,8 @@ public class UserController {
 
         User user = userService.getCurrentUser(email);
 
-        // Get recently collected artworks in the last 7 days (168 hours)
+        // Get artworks collected by the authenticated user in the last 7 days (168
+        // hours)
         List<ArtworkDTO> artworks = collectionService.getRecentlyCollectedArtworks(
                 user.getId(), 168);
 
