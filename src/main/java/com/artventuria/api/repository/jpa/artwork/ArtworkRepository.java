@@ -13,8 +13,20 @@ import java.util.List;
 public interface ArtworkRepository extends JpaRepository<Artwork, Integer> {
     List<Artwork> findByArtist(String artist);
 
-    @Query(value = "SELECT * FROM artworks a WHERE to_tsvector('english', a.title || ' ' || a.description || ' ' || a.artist) @@ plainto_tsquery('english', :query) ORDER BY ts_rank(to_tsvector('english', a.title || ' ' || a.description || ' ' || a.artist), plainto_tsquery('english', :query)) DESC", nativeQuery = true)
-    List<Artwork> searchByFullText(@Param("query") String query, Pageable pageable);
+    /**
+     * Optimized search :
+     * - Full-text with prefixes on each word (to_tsquery)
+     * - OR partial search case-insensitive on title, description, artist
+     */
+    @Query(value = "SELECT * FROM artworks a WHERE " +
+            "(to_tsvector('simple', a.title || ' ' || a.description || ' ' || a.artist || ' ' || COALESCE(a.location, '')) @@ to_tsquery('simple', :tsquery)) " +
+            "OR (unaccent(lower(a.title)) ILIKE unaccent(lower(CONCAT('%', :likequery, '%'))) " +
+            "OR unaccent(lower(a.description)) ILIKE unaccent(lower(CONCAT('%', :likequery, '%'))) " +
+            "OR unaccent(lower(a.artist)) ILIKE unaccent(lower(CONCAT('%', :likequery, '%'))) " +
+            "OR unaccent(lower(COALESCE(a.location, ''))) ILIKE unaccent(lower(CONCAT('%', :likequery, '%')))) " +
+            "ORDER BY a.id DESC", 
+            nativeQuery = true)
+    List<Artwork> searchUserFriendly(@Param("tsquery") String tsquery, @Param("likequery") String likequery, Pageable pageable);
 
     /**
      * Count the number of distinct venue IDs from a list of artwork IDs
