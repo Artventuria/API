@@ -63,7 +63,11 @@ public class ArtworkServiceImpl implements ArtworkService {
         if (query == null || query.trim().isEmpty()) {
             return artworkRepository.findAll(PageRequest.of(offset / limit, limit)).getContent();
         }
-        return artworkRepository.searchByFullText(query, PageRequest.of(offset / limit, limit));
+        // Generate a tsquery with prefix on each word
+        String tsquery = java.util.Arrays.stream(query.trim().split("\\s+")).map(s -> s + ":*")
+                .reduce((a, b) -> a + " & " + b).orElse("");
+        String likequery = query.trim();
+        return artworkRepository.searchUserFriendly(tsquery, likequery, PageRequest.of(offset / limit, limit));
     }
 
     @Override
