@@ -37,4 +37,12 @@ fi
 # Permissions for Docker socket
 sudo chmod 666 /var/run/docker.sock
 
+# Install PostgreSQL unaccent extension if psql and DB credentials are available
+if command -v psql &> /dev/null && [[ -n "$DATABASE_NAME" && -n "$DATABASE_USER" ]]; then
+  echo "Ensuring PostgreSQL 'unaccent' extension is enabled..."
+  PGPASSWORD=${DATABASE_PASSWORD:-postgres} psql -h "${DATABASE_HOST:-localhost}" -U "$DATABASE_USER" -d "$DATABASE_NAME" -c "CREATE EXTENSION IF NOT EXISTS unaccent;" || echo "[WARN] Could not enable unaccent extension (check permissions or connection)."
+else
+  echo "[INFO] Skipping unaccent extension setup (psql or DB credentials not available)."
+fi
+
 echo "All required dependencies installed and configured."

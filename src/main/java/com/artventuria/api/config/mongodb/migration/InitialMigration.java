@@ -97,11 +97,12 @@ public class InitialMigration {
                                         .append("depth", new Document("bsonType", "double"))
                                         .append("unit", new Document("bsonType", "string"))))
                         .append("tags", new Document("bsonType", java.util.Arrays.asList("array", "null"))
-                                .append("items", new Document("bsonType", "string")))
-                        .append("temporary_exhibition", new Document("bsonType", "bool")
-                                .append("description", "Whether the artwork is part of a temporary exhibition"))
-                        .append("created_at", new Document("bsonType", "date"))
-                        .append("updated_at", new Document("bsonType", "date"))));
+                            .append("items", new Document("bsonType", "string")))
+                    .append("image_url", new Document("bsonType", java.util.Arrays.asList("string", "null")))
+                    .append("temporary_exhibition", new Document("bsonType", "bool")
+                            .append("description", "Whether the artwork is part of a temporary exhibition"))
+                    .append("created_at", new Document("bsonType", "date"))
+                    .append("updated_at", new Document("bsonType", "date"))));
 
         CreateCollectionOptions options = new CreateCollectionOptions()
             .validationOptions(new ValidationOptions()

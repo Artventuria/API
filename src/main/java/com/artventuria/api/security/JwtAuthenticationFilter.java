@@ -29,20 +29,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
         try {
             String jwt = getJwtFromRequest(request);
 
             if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
                 String email = jwtTokenProvider.getEmailFromToken(jwt);
                 List<String> roles = jwtTokenProvider.getRolesFromToken(jwt);
-                
-                // Convert roles to authorities with ROLE_ prefix
+
+                // Convert roles to authorities with ROLE_ prefix if not already present
                 List<SimpleGrantedAuthority> authorities = roles.stream()
-                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                        .map(role -> new SimpleGrantedAuthority(role.startsWith("ROLE_") ? role : "ROLE_" + role))
                         .collect(Collectors.toList());
-                
+
                 UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, null, authorities);

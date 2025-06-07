@@ -51,6 +51,7 @@ public class ArtworkMetadataServiceImpl implements ArtworkMetadataService {
 
         dto.setTags(metadata.getTags() != null ? metadata.getTags() : new ArrayList<>());
         dto.setExternal_links(metadata.getExternalLinks() != null ? metadata.getExternalLinks() : new ArrayList<>());
+        dto.setImage_url(metadata.getImageUrl());
         dto.setTemporary_exhibition(metadata.isTemporaryExhibition());
         dto.setAdditional_details(metadata.getAdditionalDetails());
         dto.setCreated_at(metadata.getCreatedAt());

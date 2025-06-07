@@ -16,20 +16,25 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.artventuria.api.dto.artwork.ArtworkDTO;
+import com.artventuria.api.mapper.ArtworkMapper;
+
 @Service
 @Transactional
 public class CollectionServiceImpl implements CollectionService {
 
     private final CollectionRepository collectionRepository;
     private final CollectionArtworkRepository collectionArtworkRepository;
+    private final ArtworkMapper artworkMapper;
 
     @Autowired
     public CollectionServiceImpl(
             CollectionRepository collectionRepository,
-            CollectionArtworkRepository collectionArtworkRepository) {
+            CollectionArtworkRepository collectionArtworkRepository,
+            ArtworkMapper artworkMapper) {
         this.collectionRepository = collectionRepository;
         this.collectionArtworkRepository = collectionArtworkRepository;
-
+        this.artworkMapper = artworkMapper;
     }
 
     @Override
@@ -81,5 +86,21 @@ public class CollectionServiceImpl implements CollectionService {
     @Transactional(readOnly = true)
     public int getCollectionArtworksCount(Integer collectionId) {
         return collectionArtworkRepository.findByCollectionId(collectionId).size();
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<ArtworkDTO> getRecentlyCollectedArtworks(Integer userId, int hoursAgo) {
+        // Calculate the date from which to retrieve artworks (e.g., 168 hours = 1 week ago)
+        Instant sinceDate = Instant.now().minusSeconds(hoursAgo * 3600L);
+        
+        // Get artworks collected since the specified date
+        List<CollectionArtwork> collectionArtworks = collectionArtworkRepository.findCollectedSinceByUserId(userId, sinceDate);
+        
+        // Convert to DTOs using the ArtworkMapper
+        return collectionArtworks.stream()
+                .map(ca -> ca.getArtwork()) // Extract the Artwork entity
+                .map(artwork -> artworkMapper.toDto(artwork)) // Convert to ArtworkDTO
+                .collect(Collectors.toList());
     }
 }

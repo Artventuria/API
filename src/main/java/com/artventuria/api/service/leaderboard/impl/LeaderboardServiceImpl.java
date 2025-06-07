@@ -3,6 +3,8 @@ package com.artventuria.api.service.leaderboard.impl;
 import com.artventuria.api.domain.postgresql.LeaderboardEntry;
 import com.artventuria.api.repository.jpa.points.LeaderboardRepository;
 import com.artventuria.api.repository.jpa.user.UserRepository;
+import com.artventuria.api.service.badge.BadgeProgressService;
+import org.springframework.context.annotation.Lazy;
 import com.artventuria.api.service.leaderboard.LeaderboardService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +18,13 @@ public class LeaderboardServiceImpl implements LeaderboardService {
 
     private final LeaderboardRepository leaderboardRepository;
     private final UserRepository userRepository;
+    private final BadgeProgressService badgeProgressService;
 
     @Autowired
-    public LeaderboardServiceImpl(LeaderboardRepository leaderboardRepository, UserRepository userRepository) {
+    public LeaderboardServiceImpl(LeaderboardRepository leaderboardRepository, UserRepository userRepository, @Lazy BadgeProgressService badgeProgressService) {
         this.leaderboardRepository = leaderboardRepository;
         this.userRepository = userRepository;
+        this.badgeProgressService = badgeProgressService;
     }
 
     @Override
@@ -48,6 +52,10 @@ public class LeaderboardServiceImpl implements LeaderboardService {
             userRepository.findById(entry.getUserId()).ifPresent(user -> {
                 entry.setUsername(user.getUsername());
             });
+            
+            // Calculate badge count - number of completed badges for the user
+            int completedBadgesCount = badgeProgressService.getCompletedBadges(entry.getUserId()).size();
+            entry.setBadgeCount(completedBadgesCount);
         }
         return entry;
     }

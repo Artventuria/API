@@ -3,6 +3,7 @@ package com.artventuria.api.service.collection;
 import java.util.List;
 import com.artventuria.api.domain.postgresql.Collection;
 import com.artventuria.api.domain.postgresql.Artwork;
+import com.artventuria.api.dto.artwork.ArtworkDTO;
 
 public interface CollectionService {
 
@@ -17,4 +18,13 @@ public interface CollectionService {
     boolean isArtworkInCollection(Integer collectionId, Integer artworkId);
 
     int getCollectionArtworksCount(Integer collectionId);
+    
+    /**
+     * Get recently collected artworks across all collections of a user within a specific time period
+     * 
+     * @param userId ID of the user
+     * @param hoursAgo Number of hours to look back (e.g., 168 for one week)
+     * @return List of complete artwork DTOs recently collected by the user within the specified time period
+     */
+    List<ArtworkDTO> getRecentlyCollectedArtworks(Integer userId, int hoursAgo);
 }

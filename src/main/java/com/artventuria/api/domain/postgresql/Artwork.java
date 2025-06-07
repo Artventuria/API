@@ -8,7 +8,10 @@ import lombok.AllArgsConstructor;
 import java.time.Instant;
 import java.util.List;
 
-@Getter @Setter @Entity @Table(name="artworks")
+@Getter
+@Setter
+@Entity
+@Table(name = "artworks")
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -37,7 +40,7 @@ public class Artwork {
 
     @Column(nullable = false)
     private String location;
-    
+
     @Column(name = "venue_id")
     private String venueId;
 
