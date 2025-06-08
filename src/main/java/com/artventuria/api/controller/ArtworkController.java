@@ -138,5 +138,23 @@ public class ArtworkController {
         
         return ResponseEntity.ok(isInCollection);
     }
+    
+    /**
+     * Count the number of users who have collected a specific artwork
+     * 
+     * @param artworkId ID of the artwork
+     * @return Number of users who have collected the artwork
+     */
+    @GetMapping("/{artworkId}/collectors-count")
+    public ResponseEntity<Integer> getArtworkCollectorsCount(
+            @PathVariable Integer artworkId) {
+        // Check if the artwork exists
+        artworkService.getArtworkById(artworkId); // This will throw an exception if the artwork doesn't exist
+        
+        // Count the number of users who have collected this artwork
+        int collectorsCount = collectionService.countUsersByArtworkId(artworkId);
+        
+        return ResponseEntity.ok(collectorsCount);
+    }
 
 }
