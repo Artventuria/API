@@ -36,4 +36,12 @@ public interface CollectionService {
      * @return true if the artwork is in any of the user's collections, false otherwise
      */
     boolean isArtworkInUserCollection(Integer userId, Integer artworkId);
+    
+    /**
+     * Count the number of unique users who have collected a specific artwork
+     * 
+     * @param artworkId ID of the artwork
+     * @return Number of unique users who have collected the artwork
+     */
+    int countUsersByArtworkId(Integer artworkId);
 }
