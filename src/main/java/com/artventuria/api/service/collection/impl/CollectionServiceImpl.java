@@ -119,4 +119,10 @@ public class CollectionServiceImpl implements CollectionService {
         
         return false;
     }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public int countUsersByArtworkId(Integer artworkId) {
+        return collectionArtworkRepository.countUsersByArtworkId(artworkId);
+    }
 }
