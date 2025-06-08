@@ -1,13 +1,19 @@
 package com.artventuria.api.controller;
 
 import com.artventuria.api.domain.postgresql.Artwork;
+import com.artventuria.api.domain.postgresql.User;
 import com.artventuria.api.dto.artwork.ArtworkDTO;
 import com.artventuria.api.dto.artwork.StillToCollectResponse;
+import com.artventuria.api.exception.ResourceNotFoundException;
 import com.artventuria.api.mapper.ArtworkMapper;
+import com.artventuria.api.repository.jpa.user.UserRepository;
 import com.artventuria.api.service.artwork.ArtworkService;
+import com.artventuria.api.service.collection.CollectionService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,11 +25,16 @@ public class ArtworkController {
 
     private final ArtworkService artworkService;
     private final ArtworkMapper artworkMapper;
+    private final CollectionService collectionService;
+    private final UserRepository userRepository;
 
     @Autowired
-    public ArtworkController(ArtworkService artworkService, ArtworkMapper artworkMapper) {
+    public ArtworkController(ArtworkService artworkService, ArtworkMapper artworkMapper, 
+                            CollectionService collectionService, UserRepository userRepository) {
         this.artworkService = artworkService;
         this.artworkMapper = artworkMapper;
+        this.collectionService = collectionService;
+        this.userRepository = userRepository;
     }
 
     @PostMapping
@@ -105,6 +116,27 @@ public class ArtworkController {
             @RequestParam(required = false) String cursor) {
         List<StillToCollectResponse> artworks = artworkService.getStillToCollectArtworks(userId, limit, cursor);
         return ResponseEntity.ok(artworks);
+    }
+    
+    /**
+     * Check if an artwork is in the user's collection
+     * 
+     * @param artworkId ID of the artwork to check
+     * @return true if the artwork is in the user's collection, false otherwise
+     */
+    @GetMapping("/{artworkId}/in-collection")
+    public ResponseEntity<Boolean> isArtworkInUserCollection(
+            @PathVariable Integer artworkId) {
+        // Get the authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+        
+        // Check if the artwork is in any of the user's collections
+        boolean isInCollection = collectionService.isArtworkInUserCollection(user.getId(), artworkId);
+        
+        return ResponseEntity.ok(isInCollection);
     }
 
 }

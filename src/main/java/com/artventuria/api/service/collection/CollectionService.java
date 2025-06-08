@@ -27,4 +27,13 @@ public interface CollectionService {
      * @return List of complete artwork DTOs recently collected by the user within the specified time period
      */
     List<ArtworkDTO> getRecentlyCollectedArtworks(Integer userId, int hoursAgo);
+    
+    /**
+     * Check if an artwork is in any of the user's collections
+     * 
+     * @param userId ID of the user
+     * @param artworkId ID of the artwork to check
+     * @return true if the artwork is in any of the user's collections, false otherwise
+     */
+    boolean isArtworkInUserCollection(Integer userId, Integer artworkId);
 }

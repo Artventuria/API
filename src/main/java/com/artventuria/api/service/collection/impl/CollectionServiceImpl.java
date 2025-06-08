@@ -103,4 +103,20 @@ public class CollectionServiceImpl implements CollectionService {
                 .map(artwork -> artworkMapper.toDto(artwork)) // Convert to ArtworkDTO
                 .collect(Collectors.toList());
     }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isArtworkInUserCollection(Integer userId, Integer artworkId) {
+        // Get all collections for the user
+        List<Collection> userCollections = collectionRepository.findByUserId(userId);
+        
+        // Check if the artwork is in any of the user's collections
+        for (Collection collection : userCollections) {
+            if (isArtworkInCollection(collection.getId(), artworkId)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
 }
