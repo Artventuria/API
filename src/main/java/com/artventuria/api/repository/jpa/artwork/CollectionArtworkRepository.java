@@ -39,4 +39,13 @@ public interface CollectionArtworkRepository extends JpaRepository<CollectionArt
      */
     @Query("SELECT ca FROM CollectionArtwork ca JOIN ca.collection c WHERE c.userId = :userId AND ca.acquisitionDate >= :sinceDate ORDER BY ca.acquisitionDate DESC")
     List<CollectionArtwork> findCollectedSinceByUserId(@Param("userId") Integer userId, @Param("sinceDate") Instant sinceDate);
+    
+    /**
+     * Count the number of unique users who have collected a specific artwork
+     * 
+     * @param artworkId ID of the artwork
+     * @return Number of unique users who have collected the artwork
+     */
+    @Query("SELECT COUNT(DISTINCT c.userId) FROM CollectionArtwork ca JOIN ca.collection c WHERE ca.artworkId = :artworkId")
+    int countUsersByArtworkId(@Param("artworkId") Integer artworkId);
 }
