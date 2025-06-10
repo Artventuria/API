@@ -188,4 +188,32 @@ public class ArtworkController {
                 .body(collectedArtworks);
     }
 
+    /**
+     * Search for artworks collected by the authenticated user across all their
+     * collections
+     * 
+     * @param query  Search query string
+     * @param limit  Maximum number of items to return (default: 10)
+     * @param offset Number of items to skip for pagination (default: 0)
+     * @return ResponseEntity with the list of matching artworks and headers for
+     *         total count
+     */
+    @GetMapping("/my-collection/search")
+    public ResponseEntity<List<ArtworkDTO>> searchMyCollectedArtworks(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+        // Get the authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+        // Search for artworks collected by the user
+        List<ArtworkDTO> matchedArtworks = collectionService.searchUserCollectedArtworks(user.getId(), query, limit,
+                offset);
+
+        return ResponseEntity.ok(matchedArtworks);
+    }
+
 }
