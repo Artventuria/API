@@ -62,4 +62,15 @@ public interface CollectionService {
      * @return Total count of artworks collected by the user
      */
     int countUserCollectedArtworks(Integer userId);
+    
+    /**
+     * Search for artworks collected by a user across all their collections
+     * 
+     * @param userId ID of the user
+     * @param query Search query string
+     * @param limit Maximum number of items to return
+     * @param offset Number of items to skip for pagination
+     * @return List of ArtworkDTO objects matching the search criteria
+     */
+    List<ArtworkDTO> searchUserCollectedArtworks(Integer userId, String query, int limit, int offset);
 }
