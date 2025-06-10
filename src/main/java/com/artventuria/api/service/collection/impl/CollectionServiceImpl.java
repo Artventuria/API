@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.Instant;
 import java.util.List;
@@ -124,5 +126,28 @@ public class CollectionServiceImpl implements CollectionService {
     @Transactional(readOnly = true)
     public int countUsersByArtworkId(Integer artworkId) {
         return collectionArtworkRepository.countUsersByArtworkId(artworkId);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<ArtworkDTO> getAllUserCollectedArtworks(Integer userId, int limit, int offset) {
+        // Create pageable object for pagination
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        
+        // Get all artworks collected by the user
+        List<CollectionArtwork> collectionArtworks = collectionArtworkRepository.findAllCollectedByUserId(userId, pageable);
+        
+        // Convert to DTOs using the ArtworkMapper
+        return collectionArtworks.stream()
+                .map(CollectionArtwork::getArtwork) // Extract the Artwork entity
+                .map(artworkMapper::toDto) // Convert to ArtworkDTO
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public int countUserCollectedArtworks(Integer userId) {
+        // Count unique artworks collected by the user across all their collections
+        return collectionArtworkRepository.countUniqueArtworksByUserId(userId);
     }
 }
