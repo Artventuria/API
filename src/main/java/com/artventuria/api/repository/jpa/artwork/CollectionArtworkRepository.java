@@ -48,4 +48,24 @@ public interface CollectionArtworkRepository extends JpaRepository<CollectionArt
      */
     @Query("SELECT COUNT(DISTINCT c.userId) FROM CollectionArtwork ca JOIN ca.collection c WHERE ca.artworkId = :artworkId")
     int countUsersByArtworkId(@Param("artworkId") Integer artworkId);
+    
+    /**
+     * Get all artworks collected by a user across all of their collections
+     * 
+     * @param userId ID of the user
+     * @param limit Maximum number of items to return
+     * @param offset Number of items to skip for pagination
+     * @return List of CollectionArtwork entities with their associated artworks
+     */
+    @Query("SELECT ca FROM CollectionArtwork ca JOIN ca.collection c WHERE c.userId = :userId ORDER BY ca.acquisitionDate DESC")
+    List<CollectionArtwork> findAllCollectedByUserId(@Param("userId") Integer userId, Pageable pageable);
+    
+    /**
+     * Count the total number of unique artworks collected by a user across all collections
+     * 
+     * @param userId ID of the user
+     * @return Total count of unique artworks collected by the user
+     */
+    @Query("SELECT COUNT(DISTINCT ca.artworkId) FROM CollectionArtwork ca JOIN ca.collection c WHERE c.userId = :userId")
+    int countUniqueArtworksByUserId(@Param("userId") Integer userId);
 }
