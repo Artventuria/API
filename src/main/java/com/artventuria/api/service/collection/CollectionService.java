@@ -44,4 +44,22 @@ public interface CollectionService {
      * @return Number of unique users who have collected the artwork
      */
     int countUsersByArtworkId(Integer artworkId);
+    
+    /**
+     * Get all artworks collected by a user across all their collections
+     * 
+     * @param userId ID of the user
+     * @param limit Maximum number of items to return
+     * @param offset Number of items to skip for pagination
+     * @return List of ArtworkDTO representing all the artworks collected by the user
+     */
+    List<ArtworkDTO> getAllUserCollectedArtworks(Integer userId, int limit, int offset);
+    
+    /**
+     * Count the total number of artworks collected by a user across all their collections
+     * 
+     * @param userId ID of the user
+     * @return Total count of artworks collected by the user
+     */
+    int countUserCollectedArtworks(Integer userId);
 }
