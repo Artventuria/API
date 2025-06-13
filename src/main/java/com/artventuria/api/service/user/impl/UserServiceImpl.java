@@ -41,4 +41,16 @@ public class UserServiceImpl extends UserService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
+    
+    /**
+     * Get a user by their ID
+     * 
+     * @param userId ID of the user to retrieve
+     * @return User entity
+     * @throws ResourceNotFoundException if the user doesn't exist
+     */
+    public User getUserById(Integer userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+    }
 }
