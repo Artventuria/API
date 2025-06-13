@@ -1,5 +1,6 @@
 package com.artventuria.api.dto.nfc;
 
+import com.artventuria.api.dto.artwork.ArtworkDTO;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -16,6 +17,7 @@ public class NFCScanResponse {
     private String deviceId;
     private Integer userId;
     private Integer pointsEarned;
+    private ArtworkDTO artwork;
 
     // Constructor without the pointsEarned field for compatibility with existing
     // code
@@ -29,5 +31,6 @@ public class NFCScanResponse {
         this.deviceId = deviceId;
         this.userId = userId;
         this.pointsEarned = null;
+        this.artwork = null;
     }
 }
