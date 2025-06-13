@@ -101,4 +101,31 @@ public class UserController {
 
         return ResponseEntity.ok(artworks);
     }
+
+    /**
+     * Get user profile information by user ID
+     * 
+     * @param userId ID of the user to retrieve
+     * @return ResponseEntity with the extended user profile information
+     */
+    @GetMapping("/{userId}")
+    public ResponseEntity<ExtendedUserResponse> getUserById(@PathVariable Integer userId) {
+        // Get the user by ID
+        User user = userService.getUserById(userId);
+        
+        // Calculate badge count - number of completed badges for the user
+        int badgeCount = badgeProgressService.getCompletedBadges(user.getId()).size();
+
+        // Calculate total artworks in user's collections
+        List<Collection> userCollections = collectionService.getUserCollections(user.getId(), 1000, 0);
+        int artworkCount = 0;
+        for (Collection collection : userCollections) {
+            artworkCount += collectionService.getCollectionArtworksCount(collection.getId());
+        }
+
+        ExtendedUserResponse response = new ExtendedUserResponse(user.getId(), user.getUsername(), user.getEmail(),
+                user.getPoints(), user.getLastLogin(), user.getCreatedAt(), user.getUpdatedAt(),
+                badgeCount, artworkCount);
+        return ResponseEntity.ok(response);
+    }
 }

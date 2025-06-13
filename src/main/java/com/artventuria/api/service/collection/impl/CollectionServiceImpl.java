@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.Instant;
 import java.util.List;
@@ -87,20 +89,98 @@ public class CollectionServiceImpl implements CollectionService {
     public int getCollectionArtworksCount(Integer collectionId) {
         return collectionArtworkRepository.findByCollectionId(collectionId).size();
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     public List<ArtworkDTO> getRecentlyCollectedArtworks(Integer userId, int hoursAgo) {
-        // Calculate the date from which to retrieve artworks (e.g., 168 hours = 1 week ago)
+        // Calculate the date from which to retrieve artworks (e.g., 168 hours = 1 week
+        // ago)
         Instant sinceDate = Instant.now().minusSeconds(hoursAgo * 3600L);
-        
+
         // Get artworks collected since the specified date
-        List<CollectionArtwork> collectionArtworks = collectionArtworkRepository.findCollectedSinceByUserId(userId, sinceDate);
-        
+        List<CollectionArtwork> collectionArtworks = collectionArtworkRepository.findCollectedSinceByUserId(userId,
+                sinceDate);
+
         // Convert to DTOs using the ArtworkMapper
         return collectionArtworks.stream()
                 .map(ca -> ca.getArtwork()) // Extract the Artwork entity
                 .map(artwork -> artworkMapper.toDto(artwork)) // Convert to ArtworkDTO
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isArtworkInUserCollection(Integer userId, Integer artworkId) {
+        // Get all collections for the user
+        List<Collection> userCollections = collectionRepository.findByUserId(userId);
+
+        // Check if the artwork is in any of the user's collections
+        for (Collection collection : userCollections) {
+            if (isArtworkInCollection(collection.getId(), artworkId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int countUsersByArtworkId(Integer artworkId) {
+        return collectionArtworkRepository.countUsersByArtworkId(artworkId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ArtworkDTO> getAllUserCollectedArtworks(Integer userId, int limit, int offset) {
+        // Create pageable object for pagination
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+
+        // Get all artworks collected by the user
+        List<CollectionArtwork> collectionArtworks = collectionArtworkRepository.findAllCollectedByUserId(userId,
+                pageable);
+
+        // Convert to DTOs using the ArtworkMapper
+        return collectionArtworks.stream()
+                .map(CollectionArtwork::getArtwork) // Extract the Artwork entity
+                .map(artworkMapper::toDto) // Convert to ArtworkDTO
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int countUserCollectedArtworks(Integer userId) {
+        // Count unique artworks collected by the user across all their collections
+        return collectionArtworkRepository.countUniqueArtworksByUserId(userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ArtworkDTO> searchUserCollectedArtworks(Integer userId, String query, int limit, int offset) {
+        if (query == null || query.trim().isEmpty()) {
+            // If query is empty, return all collected artworks with pagination
+            return getAllUserCollectedArtworks(userId, limit, offset);
+        }
+
+        // Generate a tsquery with prefix on each word
+        String tsquery = java.util.Arrays.stream(query.trim().split("\\s+"))
+                .map(s -> s + ":*")
+                .reduce((a, b) -> a + " & " + b)
+                .orElse("");
+
+        String likequery = query.trim();
+
+        // Create pageable object for pagination
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+
+        // Search for artworks collected by the user matching the query
+        List<CollectionArtwork> collectionArtworks = collectionArtworkRepository.searchCollectedArtworks(
+                userId, tsquery, likequery, pageable);
+
+        // Convert to DTOs using the ArtworkMapper
+        return collectionArtworks.stream()
+                .map(CollectionArtwork::getArtwork) // Extract the Artwork entity
+                .map(artworkMapper::toDto) // Convert to ArtworkDTO
                 .collect(Collectors.toList());
     }
 }

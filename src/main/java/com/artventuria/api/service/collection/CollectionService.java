@@ -27,4 +27,50 @@ public interface CollectionService {
      * @return List of complete artwork DTOs recently collected by the user within the specified time period
      */
     List<ArtworkDTO> getRecentlyCollectedArtworks(Integer userId, int hoursAgo);
+    
+    /**
+     * Check if an artwork is in any of the user's collections
+     * 
+     * @param userId ID of the user
+     * @param artworkId ID of the artwork to check
+     * @return true if the artwork is in any of the user's collections, false otherwise
+     */
+    boolean isArtworkInUserCollection(Integer userId, Integer artworkId);
+    
+    /**
+     * Count the number of unique users who have collected a specific artwork
+     * 
+     * @param artworkId ID of the artwork
+     * @return Number of unique users who have collected the artwork
+     */
+    int countUsersByArtworkId(Integer artworkId);
+    
+    /**
+     * Get all artworks collected by a user across all their collections
+     * 
+     * @param userId ID of the user
+     * @param limit Maximum number of items to return
+     * @param offset Number of items to skip for pagination
+     * @return List of ArtworkDTO representing all the artworks collected by the user
+     */
+    List<ArtworkDTO> getAllUserCollectedArtworks(Integer userId, int limit, int offset);
+    
+    /**
+     * Count the total number of artworks collected by a user across all their collections
+     * 
+     * @param userId ID of the user
+     * @return Total count of artworks collected by the user
+     */
+    int countUserCollectedArtworks(Integer userId);
+    
+    /**
+     * Search for artworks collected by a user across all their collections
+     * 
+     * @param userId ID of the user
+     * @param query Search query string
+     * @param limit Maximum number of items to return
+     * @param offset Number of items to skip for pagination
+     * @return List of ArtworkDTO objects matching the search criteria
+     */
+    List<ArtworkDTO> searchUserCollectedArtworks(Integer userId, String query, int limit, int offset);
 }

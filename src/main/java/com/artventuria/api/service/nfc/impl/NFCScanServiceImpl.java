@@ -20,6 +20,7 @@ import com.artventuria.api.service.collection.CollectionService;
 import com.artventuria.api.service.nfc.NFCScanService;
 import com.artventuria.api.service.nfc.NFCTagService;
 import com.artventuria.api.service.point.PointService;
+import com.artventuria.api.mapper.ArtworkMapper;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +48,7 @@ public class NFCScanServiceImpl implements NFCScanService {
     private final BadgeRepository badgeRepository;
     private final NFCTagService nfcTagService;
     private final PointService pointService;
+    private final ArtworkMapper artworkMapper;
 
     @Autowired
     private ArtworkMetadataRepository artworkMetadataRepository;
@@ -103,6 +105,8 @@ public class NFCScanServiceImpl implements NFCScanService {
         // If the artworkId is available on the tag, add it to the response
         if (tag.getArtwork() != null) {
             response.setArtworkId(tag.getArtwork().getId().longValue());
+            // Add the full artwork object to the response
+            response.setArtwork(artworkMapper.toDto(tag.getArtwork()));
         }
 
         // Define tagId

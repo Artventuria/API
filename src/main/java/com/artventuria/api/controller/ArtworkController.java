@@ -1,13 +1,19 @@
 package com.artventuria.api.controller;
 
 import com.artventuria.api.domain.postgresql.Artwork;
+import com.artventuria.api.domain.postgresql.User;
 import com.artventuria.api.dto.artwork.ArtworkDTO;
 import com.artventuria.api.dto.artwork.StillToCollectResponse;
+import com.artventuria.api.exception.ResourceNotFoundException;
 import com.artventuria.api.mapper.ArtworkMapper;
+import com.artventuria.api.repository.jpa.user.UserRepository;
 import com.artventuria.api.service.artwork.ArtworkService;
+import com.artventuria.api.service.collection.CollectionService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,11 +25,16 @@ public class ArtworkController {
 
     private final ArtworkService artworkService;
     private final ArtworkMapper artworkMapper;
+    private final CollectionService collectionService;
+    private final UserRepository userRepository;
 
     @Autowired
-    public ArtworkController(ArtworkService artworkService, ArtworkMapper artworkMapper) {
+    public ArtworkController(ArtworkService artworkService, ArtworkMapper artworkMapper,
+            CollectionService collectionService, UserRepository userRepository) {
         this.artworkService = artworkService;
         this.artworkMapper = artworkMapper;
+        this.collectionService = collectionService;
+        this.userRepository = userRepository;
     }
 
     @PostMapping
@@ -105,6 +116,159 @@ public class ArtworkController {
             @RequestParam(required = false) String cursor) {
         List<StillToCollectResponse> artworks = artworkService.getStillToCollectArtworks(userId, limit, cursor);
         return ResponseEntity.ok(artworks);
+    }
+
+    /**
+     * Check if an artwork is in the user's collection
+     * 
+     * @param artworkId ID of the artwork to check
+     * @return true if the artwork is in the user's collection, false otherwise
+     */
+    @GetMapping("/{artworkId}/in-collection")
+    public ResponseEntity<Boolean> isArtworkInUserCollection(
+            @PathVariable Integer artworkId) {
+        // Get the authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+        // Check if the artwork is in any of the user's collections
+        boolean isInCollection = collectionService.isArtworkInUserCollection(user.getId(), artworkId);
+
+        return ResponseEntity.ok(isInCollection);
+    }
+
+    /**
+     * Count the number of users who have collected a specific artwork
+     * 
+     * @param artworkId ID of the artwork
+     * @return Number of users who have collected the artwork
+     */
+    @GetMapping("/{artworkId}/collectors-count")
+    public ResponseEntity<Integer> getArtworkCollectorsCount(
+            @PathVariable Integer artworkId) {
+        // Check if the artwork exists
+        artworkService.getArtworkById(artworkId); // This will throw an exception if the artwork doesn't exist
+
+        // Count the number of users who have collected this artwork
+        int collectorsCount = collectionService.countUsersByArtworkId(artworkId);
+
+        return ResponseEntity.ok(collectorsCount);
+    }
+
+    /**
+     * Get all artworks collected by the authenticated user across all their
+     * collections
+     * 
+     * @param limit  Maximum number of items to return (default: 10)
+     * @param offset Number of items to skip for pagination (default: 0)
+     * @return ResponseEntity with the list of artworks and headers for total count
+     *         and total pages
+     */
+    @GetMapping("/my-collection")
+    public ResponseEntity<List<ArtworkDTO>> getMyCollectedArtworks(
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+        // Get the authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+        // Get the total count of artworks collected by the user
+        int totalArtworks = collectionService.countUserCollectedArtworks(user.getId());
+
+        // Get artworks for the current page
+        List<ArtworkDTO> collectedArtworks = collectionService.getAllUserCollectedArtworks(user.getId(), limit, offset);
+
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(totalArtworks))
+                .header("X-Total-Pages", String.valueOf((int) Math.ceil((double) totalArtworks / limit)))
+                .body(collectedArtworks);
+    }
+
+    /**
+     * Search for artworks collected by the authenticated user across all their
+     * collections
+     * 
+     * @param query  Search query string
+     * @param limit  Maximum number of items to return (default: 10)
+     * @param offset Number of items to skip for pagination (default: 0)
+     * @return ResponseEntity with the list of matching artworks and headers for
+     *         total count
+     */
+    @GetMapping("/my-collection/search")
+    public ResponseEntity<List<ArtworkDTO>> searchMyCollectedArtworks(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+        // Get the authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+        // Search for artworks collected by the user
+        List<ArtworkDTO> matchedArtworks = collectionService.searchUserCollectedArtworks(user.getId(), query, limit,
+                offset);
+
+        return ResponseEntity.ok(matchedArtworks);
+    }
+
+    /**
+     * Get all artworks collected by a specific user across all their collections
+     * 
+     * @param userId ID of the user whose collection to retrieve
+     * @param limit  Maximum number of items to return (default: 10)
+     * @param offset Number of items to skip for pagination (default: 0)
+     * @return ResponseEntity with the list of artworks and headers for total count
+     *         and total pages
+     */
+    @GetMapping("/user/{userId}/collection")
+    public ResponseEntity<List<ArtworkDTO>> getUserCollectedArtworks(
+            @PathVariable Integer userId,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+        // Verify that the requested user exists
+        userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        // Get the total count of artworks collected by the user
+        int totalArtworks = collectionService.countUserCollectedArtworks(userId);
+
+        // Get artworks for the current page
+        List<ArtworkDTO> collectedArtworks = collectionService.getAllUserCollectedArtworks(userId, limit, offset);
+
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(totalArtworks))
+                .header("X-Total-Pages", String.valueOf((int) Math.ceil((double) totalArtworks / limit)))
+                .body(collectedArtworks);
+    }
+
+    /**
+     * Search for artworks collected by a specific user across all their collections
+     * 
+     * @param userId ID of the user whose collection to search
+     * @param query  Search query string
+     * @param limit  Maximum number of items to return (default: 10)
+     * @param offset Number of items to skip for pagination (default: 0)
+     * @return ResponseEntity with the list of matching artworks
+     */
+    @GetMapping("/user/{userId}/collection/search")
+    public ResponseEntity<List<ArtworkDTO>> searchUserCollectedArtworks(
+            @PathVariable Integer userId,
+            @RequestParam String query,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+        // Verify that the requested user exists
+        userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        // Search for artworks collected by the user
+        List<ArtworkDTO> matchedArtworks = collectionService.searchUserCollectedArtworks(userId, query, limit, offset);
+
+        return ResponseEntity.ok(matchedArtworks);
     }
 
 }
