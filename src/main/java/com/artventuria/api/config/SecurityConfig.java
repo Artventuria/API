@@ -24,8 +24,10 @@ public class SecurityConfig {
                 http
                                 .csrf(csrf -> csrf.disable())
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/reset-password",
-                                                                "/api/auth/reset-password/verify", "/api/auth/forgot-password", "/api/auth/reset-redirect",
+                                                .requestMatchers("/api/auth/login", "/api/auth/register",
+                                                                "/api/auth/reset-password",
+                                                                "/api/auth/reset-password/verify",
+                                                                "/api/auth/forgot-password", "/api/auth/reset-redirect",
                                                                 "/actuator/health", "/api/version")
                                                 .permitAll()
                                                 .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/api-docs/**",
