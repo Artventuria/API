@@ -21,7 +21,7 @@ jobs:
           distribution: "temurin"
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v5.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -40,9 +40,10 @@ jobs:
           distribution: "temurin"
           cache: "maven"
 
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
       - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/maven@master
+        run: snyk test --all-projects
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --all-projects
