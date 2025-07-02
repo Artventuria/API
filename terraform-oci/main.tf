@@ -54,14 +54,14 @@ resource "oci_core_instance" "artventuria_instance" {
   }
 }
 
-# Règles de Sécurité (équivalent Security Group)
+# Security Group
 resource "oci_core_network_security_group" "artventuria_nsg" {
   compartment_id = var.compartment_id
   vcn_id         = data.oci_core_vcn.existing_vcn.id
   display_name   = "artventuria-security-group"
 }
 
-# Règle pour SSH (port 22)
+# SSH rules (port 22)
 resource "oci_core_network_security_group_security_rule" "allow_ssh" {
   network_security_group_id = oci_core_network_security_group.artventuria_nsg.id
   direction                 = "INGRESS"
@@ -76,7 +76,7 @@ resource "oci_core_network_security_group_security_rule" "allow_ssh" {
   }
 }
 
-# Règle pour HTTP (port 80)
+# HTTP rules (port 80)
 resource "oci_core_network_security_group_security_rule" "allow_http" {
   network_security_group_id = oci_core_network_security_group.artventuria_nsg.id
   direction                 = "INGRESS"
@@ -91,7 +91,7 @@ resource "oci_core_network_security_group_security_rule" "allow_http" {
   }
 }
 
-# Règle pour HTTPS (port 443)
+# HTTPS rules (port 443)
 resource "oci_core_network_security_group_security_rule" "allow_https" {
   network_security_group_id = oci_core_network_security_group.artventuria_nsg.id
   direction                 = "INGRESS"
@@ -106,7 +106,7 @@ resource "oci_core_network_security_group_security_rule" "allow_https" {
   }
 }
 
-# Référence au VCN existant
+# Reference to existing VCN
 data "oci_core_vcn" "existing_vcn" {
   compartment_id = var.compartment_id
   # Vous devrez connaître l'OCID du VCN ou son display_name
@@ -114,14 +114,14 @@ data "oci_core_vcn" "existing_vcn" {
   # Alternativement, vous pouvez créer un nouveau VCN
 }
 
-# Mise à jour des enregistrements DNS sur AWS Route53
+# Update DNS records on AWS Route53
 data "aws_route53_zone" "artventuria" {
   name         = var.ses_domain_name
   private_zone = false
   provider     = aws.primary
 }
 
-# Mise à jour de l'enregistrement A pour l'API
+# Update A record for API
 resource "aws_route53_record" "api" {
   zone_id  = data.aws_route53_zone.artventuria.zone_id
   name     = "api.${var.ses_domain_name}"
@@ -130,6 +130,3 @@ resource "aws_route53_record" "api" {
   records  = [oci_core_instance.artventuria_instance.public_ip]
   provider = aws.primary
 }
-
-# Garder SES et autres configurations Route53 existantes
-# Nous allons simplement mettre à jour l'adresse IP pour pointer vers Oracle Cloud
